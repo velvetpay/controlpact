@@ -43,6 +43,13 @@ function App() {
   const [apiOnline, setApiOnline] =
     useState(false);
 
+  const [policies, setPolicies] =
+    useState<Array<{
+      id: string;
+      defaultDecision: string;
+      ruleCount: number;
+    }>>([]);
+
   useEffect(() => {
     fetch("/controlpact-api/health")
       .then((response) => response.json())
@@ -53,6 +60,19 @@ function App() {
       )
       .catch(() =>
         setApiOnline(false)
+      );
+
+    fetch("/controlpact-api/v1/policies")
+      .then((response) => response.json())
+      .then((data) =>
+        setPolicies(
+          Array.isArray(data?.policies)
+            ? data.policies
+            : []
+        )
+      )
+      .catch(() =>
+        setPolicies([])
       );
   }, []);
 
@@ -233,6 +253,43 @@ function App() {
               </div>
             </div>
           </article>
+        </section>
+
+        <section className="panel policy-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">
+                SERVER-OWNED CONTROL
+              </p>
+              <h3>Active Policies</h3>
+            </div>
+
+            <span className="policy-count">
+              {policies.length} active
+            </span>
+          </div>
+
+          <div className="policy-grid">
+            {policies.map((policy) => (
+              <div
+                className="policy-card"
+                key={policy.id}
+              >
+                <strong>{policy.id}</strong>
+
+                <span>
+                  Default: {policy.defaultDecision}
+                </span>
+
+                <small>
+                  {policy.ruleCount} rule
+                  {policy.ruleCount === 1
+                    ? ""
+                    : "s"}
+                </small>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="panel trust-panel">
