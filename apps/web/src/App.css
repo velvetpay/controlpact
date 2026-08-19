@@ -627,3 +627,12 @@ h3 {
   opacity: 0.55;
   cursor: wait;
 }
+
+
+.workflow-panel {
+  margin-top: 18px;
+}
+
+#approval-queue {
+  scroll-margin-top: 24px;
+}

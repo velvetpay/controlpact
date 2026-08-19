@@ -201,6 +201,26 @@ export default function DecisionConsole() {
 
         setResult(data.result);
         setReceipt(data.receipt);
+
+        if (
+          data.result?.decision ===
+            "APPROVE" &&
+          data.approval
+        ) {
+          window.setTimeout(
+            () => {
+              document
+                .getElementById(
+                  "approval-queue"
+                )
+                ?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+            },
+            350
+          );
+        }
       } catch (requestError) {
         setError(
           requestError instanceof Error

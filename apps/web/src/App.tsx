@@ -321,151 +321,149 @@ function App() {
           </article>
         </section>
 
-        <section className="workspace-grid">
-          <article className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">
-                  LIVE CONTROL
-                </p>
-                <h3>Recent Decisions</h3>
-              </div>
-
-              <button className="text-button">
-                View all
-              </button>
-            </div>
-
-            <div className="decision-list">
-              {decisions.map((item) => (
-                <div
-                  className="decision-row"
-                  key={`${item.agent}-${item.action}`}
-                >
-                  <div>
-                    <strong>{item.action}</strong>
-                    <span>
-                      {item.agent} · {item.policy}
-                    </span>
-                  </div>
-
-                  <DecisionBadge
-                    value={item.decision}
-                  />
-
-                  <small>{item.time}</small>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="panel approval-panel">
-            <p className="eyebrow">
-              HUMAN-IN-THE-LOOP
-            </p>
-
-            <h3>
-              Approval Queue
-            </h3>
-
-            {approvals.filter(
-              (item) =>
-                item.status ===
-                "PENDING"
-            ).length === 0 ? (
-              <div className="approval-card">
-                <strong>
-                  No pending approvals
-                </strong>
-
-                <p>
-                  Actions requiring human authority
-                  will appear here automatically.
-                </p>
-              </div>
-            ) : (
-              approvals
-                .filter(
-                  (item) =>
-                    item.status ===
-                    "PENDING"
-                )
-                .map(
-                  (approval) => (
-                    <div
-                      className="approval-card"
-                      key={approval.id}
-                    >
-                      <span>
-                        {approval.agentId}
-                      </span>
-
-                      <strong>
-                        {approval.action}
-                      </strong>
-
-                      <p>
-                        Pending since{" "}
-                        {new Date(
-                          approval.requestedAt
-                        ).toLocaleString()}
-                      </p>
-
-                      <small className="approval-receipt">
-                        Receipt:{" "}
-                        {approval.receiptId}
-                      </small>
-
-                      <div className="approval-actions">
-                        <button
-                          className="approve"
-                          disabled={
-                            approvalBusy ===
-                            approval.id
-                          }
-                          onClick={() =>
-                            decideApproval(
-                              approval.id,
-                              "approve"
-                            )
-                          }
-                        >
-                          {approvalBusy ===
-                          approval.id
-                            ? "Working..."
-                            : "Approve"}
-                        </button>
-
-                        <button
-                          className="reject"
-                          disabled={
-                            approvalBusy ===
-                            approval.id
-                          }
-                          onClick={() =>
-                            decideApproval(
-                              approval.id,
-                              "reject"
-                            )
-                          }
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  )
-                )
-            )}
-
-            {approvalMessage && (
-              <p className="approval-message">
-                {approvalMessage}
-              </p>
-            )}
-          </article>
-        </section>
-
         <DecisionConsole />
+
+        <article id="approval-queue" className="panel approval-panel workflow-panel">
+          <p className="eyebrow">
+            HUMAN-IN-THE-LOOP
+          </p>
+
+          <h3>
+            Approval Queue
+          </h3>
+
+          {approvals.filter(
+            (item) =>
+              item.status ===
+              "PENDING"
+          ).length === 0 ? (
+            <div className="approval-card">
+              <strong>
+                No pending approvals
+              </strong>
+
+              <p>
+                Actions requiring human authority
+                will appear here automatically.
+              </p>
+            </div>
+          ) : (
+            approvals
+              .filter(
+                (item) =>
+                  item.status ===
+                  "PENDING"
+              )
+              .map(
+                (approval) => (
+                  <div
+                    className="approval-card"
+                    key={approval.id}
+                  >
+                    <span>
+                      {approval.agentId}
+                    </span>
+
+                    <strong>
+                      {approval.action}
+                    </strong>
+
+                    <p>
+                      Pending since{" "}
+                      {new Date(
+                        approval.requestedAt
+                      ).toLocaleString()}
+                    </p>
+
+                    <small className="approval-receipt">
+                      Receipt:{" "}
+                      {approval.receiptId}
+                    </small>
+
+                    <div className="approval-actions">
+                      <button
+                        className="approve"
+                        disabled={
+                          approvalBusy ===
+                          approval.id
+                        }
+                        onClick={() =>
+                          decideApproval(
+                            approval.id,
+                            "approve"
+                          )
+                        }
+                      >
+                        {approvalBusy ===
+                        approval.id
+                          ? "Working..."
+                          : "Approve"}
+                      </button>
+
+                      <button
+                        className="reject"
+                        disabled={
+                          approvalBusy ===
+                          approval.id
+                        }
+                        onClick={() =>
+                          decideApproval(
+                            approval.id,
+                            "reject"
+                          )
+                        }
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                )
+              )
+          )}
+
+          {approvalMessage && (
+            <p className="approval-message">
+              {approvalMessage}
+            </p>
+          )}
+        </article>
+
+        <article className="panel workflow-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">
+                LIVE CONTROL
+              </p>
+              <h3>Recent Decisions</h3>
+            </div>
+
+            <button className="text-button">
+              View all
+            </button>
+          </div>
+
+          <div className="decision-list">
+            {decisions.map((item) => (
+              <div
+                className="decision-row"
+                key={`${item.agent}-${item.action}`}
+              >
+                <div>
+                  <strong>{item.action}</strong>
+                  <span>
+                    {item.agent} · {item.policy}
+                  </span>
+                </div>
+
+                <DecisionBadge
+                  value={item.decision}
+                />
+
+                <small>{item.time}</small>
+              </div>
+            ))}
+          </div>
+        </article>
 
         <section className="panel policy-panel">
           <div className="panel-heading">
