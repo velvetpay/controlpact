@@ -1,3 +1,7 @@
+import {
+  randomUUID,
+} from "node:crypto";
+
 import Fastify from "fastify";
 
 import {
@@ -5,6 +9,10 @@ import {
   type ActionRequest,
   type Policy,
 } from "@controlpact/policy-engine";
+
+import {
+  signDecisionReceipt,
+} from "@controlpact/receipts";
 
 type DecisionBody = {
   request?: ActionRequest;
@@ -57,15 +65,57 @@ export const buildApp = () => {
           });
       }
 
+      const receiptSecret =
+        process.env
+          .CONTROLPACT_RECEIPT_SECRET;
+
+      if (!receiptSecret) {
+        return reply
+          .code(500)
+          .send({
+            success: false,
+            message:
+              "ControlPact receipt signing is not configured.",
+          });
+      }
+
       const result =
         evaluatePolicy(
           actionRequest,
           policy,
         );
 
+      const receipt =
+        signDecisionReceipt(
+          {
+            receiptId:
+              randomUUID(),
+
+            agentId:
+              actionRequest.agentId,
+
+            action:
+              actionRequest.action,
+
+            decision:
+              result.decision,
+
+            policyId:
+              result.policyId,
+
+            matchedRuleIds:
+              result.matchedRuleIds,
+
+            issuedAt:
+              new Date().toISOString(),
+          },
+          receiptSecret,
+        );
+
       return {
         success: true,
         result,
+        receipt,
       };
     },
   );

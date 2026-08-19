@@ -1,19 +1,20 @@
 {
-  "name": "@controlpact/api",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
-    "test": "node --test test/*.test.mjs"
-  },
-  "dependencies": {
-    "@controlpact/policy-engine": "0.1.0",
-    "fastify": "^5.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^24.0.0",
-    "typescript": "^5.0.0"
-  }
+    "name":  "@controlpact/api",
+    "version":  "0.1.0",
+    "private":  true,
+    "type":  "module",
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.json",
+                    "start":  "node dist/server.js",
+                    "test":  "node --test test/*.test.mjs"
+                },
+    "dependencies":  {
+                         "@controlpact/policy-engine":  "0.1.0",
+                         "fastify":  "^5.0.0",
+                         "@controlpact/receipts":  "0.1.0"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^24.0.0",
+                            "typescript":  "^5.0.0"
+                        }
 }
