@@ -7,8 +7,11 @@ import Fastify from "fastify";
 import {
   evaluatePolicy,
   type ActionRequest,
-  type Policy,
 } from "@controlpact/policy-engine";
+
+import {
+  PolicyRegistry,
+} from "@controlpact/policy-registry";
 
 import {
   signDecisionReceipt,
@@ -16,7 +19,7 @@ import {
 
 type DecisionBody = {
   request?: ActionRequest;
-  policy?: Policy;
+  policyId?: string;
 };
 
 export const buildApp = () => {
@@ -24,19 +27,44 @@ export const buildApp = () => {
     logger: false,
   });
 
-  app.get("/health", async () => ({
-    success: true,
-    service: "controlpact-api",
-  }));
+  const policyRegistry =
+    new PolicyRegistry();
 
-  app.post<{ Body: DecisionBody }>(
+  app.get(
+    "/health",
+    async () => ({
+      success: true,
+      service:
+        "controlpact-api",
+    }),
+  );
+
+  app.get(
+    "/v1/policies",
+    async () => ({
+      success: true,
+      policies:
+        policyRegistry.list(),
+    }),
+  );
+
+  app.post<{
+    Body: DecisionBody;
+  }>(
     "/v1/decisions",
-    async (request, reply) => {
+    async (
+      request,
+      reply,
+    ) => {
       const actionRequest =
         request.body?.request;
 
-      const policy =
-        request.body?.policy;
+      const policyId =
+        String(
+          request.body
+            ?.policyId ||
+            "",
+        ).trim();
 
       if (
         !actionRequest?.agentId ||
@@ -51,17 +79,28 @@ export const buildApp = () => {
           });
       }
 
-      if (
-        !policy?.id ||
-        !policy?.defaultDecision ||
-        !Array.isArray(policy.rules)
-      ) {
+      if (!policyId) {
         return reply
           .code(400)
           .send({
             success: false,
             message:
-              "A valid policy is required.",
+              "policyId is required.",
+          });
+      }
+
+      const policy =
+        policyRegistry.get(
+          policyId,
+        );
+
+      if (!policy) {
+        return reply
+          .code(404)
+          .send({
+            success: false,
+            message:
+              "Requested ControlPact policy was not found.",
           });
       }
 
@@ -107,7 +146,8 @@ export const buildApp = () => {
               result.matchedRuleIds,
 
             issuedAt:
-              new Date().toISOString(),
+              new Date()
+                .toISOString(),
           },
           receiptSecret,
         );

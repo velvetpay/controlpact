@@ -16,29 +16,6 @@ process.env
   .CONTROLPACT_RECEIPT_SECRET =
   secret;
 
-const policy = {
-  id: "finance-policy",
-  defaultDecision: "BLOCK",
-  rules: [
-    {
-      id: "allow-refund",
-      decision: "ALLOW",
-      actions: ["refundCustomer"],
-    },
-    {
-      id: "approve-large-refund",
-      decision: "APPROVE",
-      actions: ["refundCustomer"],
-      minAmount: 500,
-    },
-    {
-      id: "block-delete",
-      decision: "BLOCK",
-      actions: ["deleteAccount"],
-    },
-  ],
-};
-
 test(
   "health endpoint works",
   async () => {
@@ -55,9 +32,32 @@ test(
       200,
     );
 
+    await app.close();
+  },
+);
+
+test(
+  "lists server-owned policies",
+  async () => {
+    const app = buildApp();
+
+    const response =
+      await app.inject({
+        method: "GET",
+        url: "/v1/policies",
+      });
+
+    const body =
+      response.json();
+
     assert.equal(
-      response.json().success,
+      body.success,
       true,
+    );
+
+    assert.equal(
+      body.policies.length,
+      3,
     );
 
     await app.close();
@@ -65,7 +65,7 @@ test(
 );
 
 test(
-  "ALLOW decision includes valid receipt",
+  "finance policy returns ALLOW",
   async () => {
     const app = buildApp();
 
@@ -74,6 +74,8 @@ test(
         method: "POST",
         url: "/v1/decisions",
         payload: {
+          policyId:
+            "finance-policy",
           request: {
             agentId:
               "finance-agent",
@@ -82,7 +84,6 @@ test(
             amount: 100,
             currency: "GBP",
           },
-          policy,
         },
       });
 
@@ -107,7 +108,7 @@ test(
 );
 
 test(
-  "APPROVE decision includes valid receipt",
+  "finance policy returns APPROVE for large refund",
   async () => {
     const app = buildApp();
 
@@ -116,6 +117,8 @@ test(
         method: "POST",
         url: "/v1/decisions",
         payload: {
+          policyId:
+            "finance-policy",
           request: {
             agentId:
               "finance-agent",
@@ -124,24 +127,15 @@ test(
             amount: 750,
             currency: "GBP",
           },
-          policy,
         },
       });
 
-    const body =
-      response.json();
-
     assert.equal(
-      body.result.decision,
+      response
+        .json()
+        .result
+        .decision,
       "APPROVE",
-    );
-
-    assert.equal(
-      verifyDecisionReceipt(
-        body.receipt,
-        secret,
-      ),
-      true,
     );
 
     await app.close();
@@ -149,7 +143,7 @@ test(
 );
 
 test(
-  "BLOCK decision includes valid receipt",
+  "production policy blocks account deletion",
   async () => {
     const app = buildApp();
 
@@ -158,30 +152,23 @@ test(
         method: "POST",
         url: "/v1/decisions",
         payload: {
+          policyId:
+            "production-policy",
           request: {
             agentId:
               "support-agent",
             action:
               "deleteAccount",
           },
-          policy,
         },
       });
 
-    const body =
-      response.json();
-
     assert.equal(
-      body.result.decision,
+      response
+        .json()
+        .result
+        .decision,
       "BLOCK",
-    );
-
-    assert.equal(
-      verifyDecisionReceipt(
-        body.receipt,
-        secret,
-      ),
-      true,
     );
 
     await app.close();
@@ -189,15 +176,8 @@ test(
 );
 
 test(
-  "API refuses unsigned operation",
+  "unknown policy is rejected",
   async () => {
-    const previous =
-      process.env
-        .CONTROLPACT_RECEIPT_SECRET;
-
-    delete process.env
-      .CONTROLPACT_RECEIPT_SECRET;
-
     const app = buildApp();
 
     const response =
@@ -205,22 +185,63 @@ test(
         method: "POST",
         url: "/v1/decisions",
         payload: {
+          policyId:
+            "agent-created-policy",
           request: {
-            agentId: "agent",
-            action: "test",
+            agentId:
+              "agent",
+            action:
+              "deleteAccount",
           },
-          policy,
         },
       });
 
     assert.equal(
       response.statusCode,
-      500,
+      404,
     );
 
-    process.env
-      .CONTROLPACT_RECEIPT_SECRET =
-      previous;
+    await app.close();
+  },
+);
+
+test(
+  "caller cannot override server policy",
+  async () => {
+    const app = buildApp();
+
+    const response =
+      await app.inject({
+        method: "POST",
+        url: "/v1/decisions",
+        payload: {
+          policyId:
+            "production-policy",
+
+          policy: {
+            id:
+              "malicious-policy",
+            defaultDecision:
+              "ALLOW",
+            rules: [],
+          },
+
+          request: {
+            agentId:
+              "attacker-agent",
+            action:
+              "deleteAccount",
+          },
+        },
+      });
+
+    assert.equal(
+      response
+        .json()
+        .result
+        .decision,
+      "BLOCK",
+    );
 
     await app.close();
   },
