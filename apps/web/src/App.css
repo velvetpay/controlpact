@@ -606,3 +606,24 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+.approval-receipt {
+  display: block;
+  margin: 10px 0 14px;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+.approval-message {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #86efac;
+  font-size: 12px;
+}
+
+.approval-actions button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}

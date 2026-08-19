@@ -51,6 +51,25 @@ function App() {
       ruleCount: number;
     }>>([]);
 
+  const [approvals, setApprovals] =
+    useState<Array<{
+      id: string;
+      receiptId: string;
+      agentId: string;
+      action: string;
+      status: string;
+      requestedAt: string;
+      decidedAt?: string;
+      decidedBy?: string;
+      reason?: string;
+    }>>([]);
+
+  const [approvalBusy, setApprovalBusy] =
+    useState("");
+
+  const [approvalMessage, setApprovalMessage] =
+    useState("");
+
   useEffect(() => {
     fetch("/controlpact-api/health")
       .then((response) => response.json())
@@ -77,6 +96,121 @@ function App() {
       );
   }, []);
 
+  useEffect(() => {
+    const loadApprovals = () => {
+      fetch("/controlpact-api/v1/approvals")
+        .then((response) => response.json())
+        .then((data) =>
+          setApprovals(
+            Array.isArray(data?.approvals)
+              ? data.approvals
+              : []
+          )
+        )
+        .catch(() =>
+          setApprovals([])
+        );
+    };
+
+    loadApprovals();
+
+    const timer =
+      window.setInterval(
+        loadApprovals,
+        1500
+      );
+
+    return () =>
+      window.clearInterval(timer);
+  }, []);
+
+  const decideApproval =
+    async (
+      approvalId: string,
+      decision:
+        | "approve"
+        | "reject",
+    ) => {
+      const decidedBy =
+        window.prompt(
+          "Reviewer name",
+          "controlpact-admin"
+        );
+
+      if (!decidedBy?.trim()) {
+        return;
+      }
+
+      const reason =
+        window.prompt(
+          decision === "approve"
+            ? "Approval reason (optional)"
+            : "Rejection reason",
+          ""
+        ) || "";
+
+      setApprovalBusy(approvalId);
+      setApprovalMessage("");
+
+      try {
+        const response =
+          await fetch(
+            `/controlpact-api/v1/approvals/${approvalId}/${decision}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+              body:
+                JSON.stringify({
+                  decidedBy:
+                    decidedBy.trim(),
+                  reason:
+                    reason.trim(),
+                }),
+            }
+          );
+
+        const data =
+          await response
+            .json()
+            .catch(() => null);
+
+        if (
+          !response.ok ||
+          !data?.success
+        ) {
+          throw new Error(
+            data?.message ||
+              "Approval decision failed."
+          );
+        }
+
+        setApprovals(
+          (current) =>
+            current.map(
+              (item) =>
+                item.id ===
+                approvalId
+                  ? data.approval
+                  : item
+            )
+        );
+
+        setApprovalMessage(
+          `${data.approval.action} ${data.approval.status.toLowerCase()} by ${data.approval.decidedBy}.`
+        );
+      } catch (error) {
+        setApprovalMessage(
+          error instanceof Error
+            ? error.message
+            : "Approval decision failed."
+        );
+      } finally {
+        setApprovalBusy("");
+      }
+    };
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -229,30 +363,105 @@ function App() {
             <p className="eyebrow">
               HUMAN-IN-THE-LOOP
             </p>
-            <h3>Approval Queue</h3>
 
-            <div className="approval-card">
-              <span>finance-agent</span>
+            <h3>
+              Approval Queue
+            </h3>
 
-              <strong>
-                Refund customer £750
-              </strong>
+            {approvals.filter(
+              (item) =>
+                item.status ===
+                "PENDING"
+            ).length === 0 ? (
+              <div className="approval-card">
+                <strong>
+                  No pending approvals
+                </strong>
 
-              <p>
-                Policy requires management approval
-                above £500.
-              </p>
-
-              <div className="approval-actions">
-                <button className="approve">
-                  Approve
-                </button>
-
-                <button className="reject">
-                  Reject
-                </button>
+                <p>
+                  Actions requiring human authority
+                  will appear here automatically.
+                </p>
               </div>
-            </div>
+            ) : (
+              approvals
+                .filter(
+                  (item) =>
+                    item.status ===
+                    "PENDING"
+                )
+                .map(
+                  (approval) => (
+                    <div
+                      className="approval-card"
+                      key={approval.id}
+                    >
+                      <span>
+                        {approval.agentId}
+                      </span>
+
+                      <strong>
+                        {approval.action}
+                      </strong>
+
+                      <p>
+                        Pending since{" "}
+                        {new Date(
+                          approval.requestedAt
+                        ).toLocaleString()}
+                      </p>
+
+                      <small className="approval-receipt">
+                        Receipt:{" "}
+                        {approval.receiptId}
+                      </small>
+
+                      <div className="approval-actions">
+                        <button
+                          className="approve"
+                          disabled={
+                            approvalBusy ===
+                            approval.id
+                          }
+                          onClick={() =>
+                            decideApproval(
+                              approval.id,
+                              "approve"
+                            )
+                          }
+                        >
+                          {approvalBusy ===
+                          approval.id
+                            ? "Working..."
+                            : "Approve"}
+                        </button>
+
+                        <button
+                          className="reject"
+                          disabled={
+                            approvalBusy ===
+                            approval.id
+                          }
+                          onClick={() =>
+                            decideApproval(
+                              approval.id,
+                              "reject"
+                            )
+                          }
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )
+            )}
+
+            {approvalMessage && (
+              <p className="approval-message">
+                {approvalMessage}
+              </p>
+            )}
           </article>
         </section>
 
