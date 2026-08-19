@@ -1,13 +1,18 @@
 {
-  "name": "controlpact",
-  "version": "0.1.0",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "dev:web": "npm run dev --workspace=apps/web",
-    "build:web": "npm run build --workspace=apps/web"
-  }
+    "name":  "controlpact",
+    "version":  "0.1.0",
+    "private":  true,
+    "workspaces":  [
+                       "apps/*",
+                       "packages/*"
+                   ],
+    "scripts":  {
+                    "dev:web":  "npm run dev --workspace=apps/web",
+                    "build:web":  "npm run build --workspace=apps/web",
+                    "build:policy":  "npm run build --workspace=@controlpact/policy-engine",
+                    "test:policy":  "npm run build:policy \u0026\u0026 npm run test --workspace=@controlpact/policy-engine"
+                },
+    "devDependencies":  {
+                            "typescript":  "^7.0.2"
+                        }
 }
