@@ -44,6 +44,13 @@ type DecisionRecord = {
   reason: string;
   matchedRuleIds: string[];
   createdAt: string;
+  approvalStatus?:
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED";
+  decidedAt?: string;
+  decidedBy?: string;
+  approvalReason?: string;
 };
 
 export const buildApp = () => {
@@ -146,6 +153,27 @@ export const buildApp = () => {
           updated,
         );
 
+        const relatedDecision =
+          decisions.find(
+            (decision) =>
+              decision.receiptId ===
+              updated.receiptId,
+          );
+
+        if (relatedDecision) {
+          relatedDecision.approvalStatus =
+            updated.status;
+
+          relatedDecision.decidedAt =
+            updated.decidedAt;
+
+          relatedDecision.decidedBy =
+            updated.decidedBy;
+
+          relatedDecision.approvalReason =
+            updated.reason;
+        }
+
         return {
           success: true,
           approval: updated,
@@ -208,6 +236,27 @@ export const buildApp = () => {
           updated.id,
           updated,
         );
+
+        const relatedDecision =
+          decisions.find(
+            (decision) =>
+              decision.receiptId ===
+              updated.receiptId,
+          );
+
+        if (relatedDecision) {
+          relatedDecision.approvalStatus =
+            updated.status;
+
+          relatedDecision.decidedAt =
+            updated.decidedAt;
+
+          relatedDecision.decidedBy =
+            updated.decidedBy;
+
+          relatedDecision.approvalReason =
+            updated.reason;
+        }
 
         return {
           success: true,
@@ -359,6 +408,11 @@ export const buildApp = () => {
 
           createdAt:
             receipt.payload.issuedAt,
+
+          approvalStatus:
+            result.decision === "APPROVE"
+              ? "PENDING"
+              : undefined,
         };
 
       decisions.unshift(

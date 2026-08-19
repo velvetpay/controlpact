@@ -636,3 +636,44 @@ h3 {
 #approval-queue {
   scroll-margin-top: 24px;
 }
+
+
+.decision-status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.human-outcome {
+  padding: 4px 8px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+
+.human-outcome-pending {
+  color: #fde68a;
+  background: rgba(234, 179, 8, 0.12);
+}
+
+.human-outcome-approved {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.human-outcome-rejected {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.decision-review-meta {
+  color: #94a3b8;
+}
+
+.decision-review-reason {
+  max-width: 220px;
+  text-align: right;
+  color: #64748b;
+}

@@ -31,6 +31,12 @@ function App() {
         | "BLOCK";
       policy: string;
       time: string;
+      approvalStatus?:
+        | "PENDING"
+        | "APPROVED"
+        | "REJECTED";
+      decidedBy?: string;
+      approvalReason?: string;
     }>>([]);
   const [apiOnline, setApiOnline] =
     useState(false);
@@ -117,6 +123,12 @@ function App() {
                   | "BLOCK";
                 policyId: string;
                 createdAt: string;
+                approvalStatus?:
+                  | "PENDING"
+                  | "APPROVED"
+                  | "REJECTED";
+                decidedBy?: string;
+                approvalReason?: string;
               }) => ({
                 id: item.id,
                 receiptId:
@@ -129,6 +141,16 @@ function App() {
                   item.decision,
                 policy:
                   item.policyId,
+
+                approvalStatus:
+                  item.approvalStatus,
+
+                decidedBy:
+                  item.decidedBy,
+
+                approvalReason:
+                  item.approvalReason,
+
                 time:
                   new Date(
                     item.createdAt
@@ -523,9 +545,33 @@ function App() {
                   </span>
                 </div>
 
-                <DecisionBadge
-                  value={item.decision}
-                />
+                <div className="decision-status-stack">
+                  <DecisionBadge
+                    value={item.decision}
+                  />
+
+                  {item.decision ===
+                    "APPROVE" &&
+                    item.approvalStatus && (
+                      <span
+                        className={`human-outcome human-outcome-${item.approvalStatus.toLowerCase()}`}
+                      >
+                        {item.approvalStatus}
+                      </span>
+                    )}
+
+                  {item.decidedBy && (
+                    <small className="decision-review-meta">
+                      by {item.decidedBy}
+                    </small>
+                  )}
+
+                  {item.approvalReason && (
+                    <small className="decision-review-reason">
+                      {item.approvalReason}
+                    </small>
+                  )}
+                </div>
 
                 <small>{item.time}</small>
               </div>
