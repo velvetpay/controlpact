@@ -410,6 +410,10 @@ export const buildApp = () => {
             policyId:
               result.policyId,
 
+            referenceId,
+
+            resource,
+
             matchedRuleIds:
               result.matchedRuleIds,
 

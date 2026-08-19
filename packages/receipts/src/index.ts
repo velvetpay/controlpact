@@ -14,6 +14,8 @@ export type DecisionReceiptPayload = {
   action: string;
   decision: ReceiptDecision;
   policyId: string;
+  referenceId: string;
+  resource?: string;
   matchedRuleIds: string[];
   issuedAt: string;
 };
@@ -32,6 +34,10 @@ const canonicalize = (
     action: payload.action,
     decision: payload.decision,
     policyId: payload.policyId,
+    referenceId:
+      payload.referenceId,
+    resource:
+      payload.resource ?? null,
     matchedRuleIds:
       [...payload.matchedRuleIds].sort(),
     issuedAt: payload.issuedAt,

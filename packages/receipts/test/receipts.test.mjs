@@ -15,6 +15,8 @@ const payload = {
   action: "refundCustomer",
   decision: "APPROVE",
   policyId: "finance-policy",
+  referenceId: "REFUND-750-001",
+  resource: "customer:CUST-001",
   matchedRuleIds: [
     "approve-large-refund"
   ],
@@ -97,6 +99,62 @@ test(
       verifyDecisionReceipt(
         receipt,
         "wrong-secret"
+      ),
+      false
+    );
+  }
+);
+
+test(
+  "rejects a tampered reference",
+  () => {
+    const receipt =
+      signDecisionReceipt(
+        payload,
+        secret
+      );
+
+    const tampered = {
+      ...receipt,
+      payload: {
+        ...receipt.payload,
+        referenceId:
+          "REFUND-750-999"
+      }
+    };
+
+    assert.equal(
+      verifyDecisionReceipt(
+        tampered,
+        secret
+      ),
+      false
+    );
+  }
+);
+
+test(
+  "rejects a tampered resource",
+  () => {
+    const receipt =
+      signDecisionReceipt(
+        payload,
+        secret
+      );
+
+    const tampered = {
+      ...receipt,
+      payload: {
+        ...receipt.payload,
+        resource:
+          "customer:CUST-999"
+      }
+    };
+
+    assert.equal(
+      verifyDecisionReceipt(
+        tampered,
+        secret
       ),
       false
     );
