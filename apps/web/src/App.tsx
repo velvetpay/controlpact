@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import "./App.css";
 
 const decisions = [
@@ -39,6 +40,22 @@ function DecisionBadge({
 }
 
 function App() {
+  const [apiOnline, setApiOnline] =
+    useState(false);
+
+  useEffect(() => {
+    fetch("/controlpact-api/health")
+      .then((response) => response.json())
+      .then((data) =>
+        setApiOnline(
+          data?.success === true
+        )
+      )
+      .catch(() =>
+        setApiOnline(false)
+      );
+  }, []);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -62,8 +79,17 @@ function App() {
         </nav>
 
         <div className="sidebar-footer">
-          <span className="status-dot" />
-          Policy engine operational
+          <span
+            className="status-dot"
+            style={{
+              background: apiOnline
+                ? "#22c55e"
+                : "#ef4444",
+            }}
+          />
+          {apiOnline
+            ? "ControlPact API operational"
+            : "ControlPact API offline"}
         </div>
       </aside>
 
