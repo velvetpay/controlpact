@@ -17,9 +17,21 @@ import {
   signDecisionReceipt,
 } from "@controlpact/receipts";
 
+import {
+  createApprovalRequest,
+  approveRequest,
+  rejectRequest,
+  type ApprovalRequest,
+} from "@controlpact/approvals";
+
 type DecisionBody = {
   request?: ActionRequest;
   policyId?: string;
+};
+
+type ApprovalDecisionBody = {
+  decidedBy?: string;
+  reason?: string;
 };
 
 export const buildApp = () => {
@@ -29,6 +41,12 @@ export const buildApp = () => {
 
   const policyRegistry =
     new PolicyRegistry();
+
+  const approvals =
+    new Map<
+      string,
+      ApprovalRequest
+    >();
 
   app.get(
     "/health",
@@ -46,6 +64,143 @@ export const buildApp = () => {
       policies:
         policyRegistry.list(),
     }),
+  );
+
+  app.get(
+    "/v1/approvals",
+    async () => ({
+      success: true,
+      approvals:
+        Array.from(
+          approvals.values(),
+        ),
+    }),
+  );
+
+  app.post<{
+    Params: {
+      approvalId: string;
+    };
+    Body:
+      ApprovalDecisionBody;
+  }>(
+    "/v1/approvals/:approvalId/approve",
+    async (
+      request,
+      reply,
+    ) => {
+      const approval =
+        approvals.get(
+          request.params.approvalId,
+        );
+
+      if (!approval) {
+        return reply
+          .code(404)
+          .send({
+            success: false,
+            message:
+              "Approval was not found.",
+          });
+      }
+
+      try {
+        const updated =
+          approveRequest(
+            approval,
+            String(
+              request.body
+                ?.decidedBy ||
+                "",
+            ).trim(),
+            request.body
+              ?.reason,
+          );
+
+        approvals.set(
+          updated.id,
+          updated,
+        );
+
+        return {
+          success: true,
+          approval: updated,
+        };
+      } catch (error) {
+        return reply
+          .code(409)
+          .send({
+            success: false,
+            message:
+              error instanceof Error
+                ? error.message
+                : "Approval failed.",
+          });
+      }
+    },
+  );
+
+  app.post<{
+    Params: {
+      approvalId: string;
+    };
+    Body:
+      ApprovalDecisionBody;
+  }>(
+    "/v1/approvals/:approvalId/reject",
+    async (
+      request,
+      reply,
+    ) => {
+      const approval =
+        approvals.get(
+          request.params.approvalId,
+        );
+
+      if (!approval) {
+        return reply
+          .code(404)
+          .send({
+            success: false,
+            message:
+              "Approval was not found.",
+          });
+      }
+
+      try {
+        const updated =
+          rejectRequest(
+            approval,
+            String(
+              request.body
+                ?.decidedBy ||
+                "",
+            ).trim(),
+            request.body
+              ?.reason,
+          );
+
+        approvals.set(
+          updated.id,
+          updated,
+        );
+
+        return {
+          success: true,
+          approval: updated,
+        };
+      } catch (error) {
+        return reply
+          .code(409)
+          .send({
+            success: false,
+            message:
+              error instanceof Error
+                ? error.message
+                : "Rejection failed.",
+          });
+      }
+    },
   );
 
   app.post<{
@@ -152,10 +307,44 @@ export const buildApp = () => {
           receiptSecret,
         );
 
+      let approval:
+        ApprovalRequest |
+        null =
+        null;
+
+      if (
+        result.decision ===
+        "APPROVE"
+      ) {
+        approval =
+          createApprovalRequest({
+            id:
+              randomUUID(),
+
+            receiptId:
+              receipt.payload
+                .receiptId,
+
+            agentId:
+              actionRequest
+                .agentId,
+
+            action:
+              actionRequest
+                .action,
+          });
+
+        approvals.set(
+          approval.id,
+          approval,
+        );
+      }
+
       return {
         success: true,
         result,
         receipt,
+        approval,
       };
     },
   );
