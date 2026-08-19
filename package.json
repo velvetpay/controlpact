@@ -14,7 +14,9 @@
                     "test:api":  "npm run build:api \u0026\u0026 npm run test --workspace=@controlpact/api",
                     "build:receipts":  "npm run build --workspace=@controlpact/receipts",
                     "test:receipts":  "npm run build:receipts \u0026\u0026 npm run test --workspace=@controlpact/receipts",
-                    "build:api":  "npm run build:policy \u0026\u0026 npm run build:receipts \u0026\u0026 npm run build --workspace=@controlpact/api"
+                    "build:api":  "npm run build:policy \u0026\u0026 npm run build:receipts \u0026\u0026 npm run build --workspace=@controlpact/api",
+                    "build:approvals":  "npm run build --workspace=@controlpact/approvals",
+                    "test:approvals":  "npm run build:approvals \u0026\u0026 npm run test --workspace=@controlpact/approvals"
                 },
     "devDependencies":  {
                             "typescript":  "^7.0.2"
