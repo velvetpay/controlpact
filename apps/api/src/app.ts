@@ -34,6 +34,18 @@ type ApprovalDecisionBody = {
   reason?: string;
 };
 
+type DecisionRecord = {
+  id: string;
+  receiptId: string;
+  agentId: string;
+  action: string;
+  decision: "ALLOW" | "APPROVE" | "BLOCK";
+  policyId: string;
+  reason: string;
+  matchedRuleIds: string[];
+  createdAt: string;
+};
+
 export const buildApp = () => {
   const app = Fastify({
     logger: false,
@@ -47,6 +59,9 @@ export const buildApp = () => {
       string,
       ApprovalRequest
     >();
+
+  const decisions:
+    DecisionRecord[] = [];
 
   app.get(
     "/health",
@@ -74,6 +89,15 @@ export const buildApp = () => {
         Array.from(
           approvals.values(),
         ),
+    }),
+  );
+
+  app.get(
+    "/v1/decisions",
+    async () => ({
+      success: true,
+      decisions:
+        decisions.slice(0, 50),
     }),
   );
 
@@ -306,6 +330,40 @@ export const buildApp = () => {
           },
           receiptSecret,
         );
+
+      const decisionRecord:
+        DecisionRecord = {
+          id:
+            receipt.payload.receiptId,
+
+          receiptId:
+            receipt.payload.receiptId,
+
+          agentId:
+            actionRequest.agentId,
+
+          action:
+            actionRequest.action,
+
+          decision:
+            result.decision,
+
+          policyId:
+            result.policyId,
+
+          reason:
+            result.reason,
+
+          matchedRuleIds:
+            result.matchedRuleIds,
+
+          createdAt:
+            receipt.payload.issuedAt,
+        };
+
+      decisions.unshift(
+        decisionRecord
+      );
 
       let approval:
         ApprovalRequest |

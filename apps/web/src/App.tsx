@@ -2,29 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import DecisionConsole from "./components/DecisionConsole";
 
-const decisions = [
-  {
-    agent: "finance-agent",
-    action: "refundCustomer",
-    decision: "APPROVE",
-    policy: "finance-policy",
-    time: "Just now",
-  },
-  {
-    agent: "support-agent",
-    action: "deleteAccount",
-    decision: "BLOCK",
-    policy: "production-policy",
-    time: "2m ago",
-  },
-  {
-    agent: "sales-agent",
-    action: "updateCRM",
-    decision: "ALLOW",
-    policy: "sales-policy",
-    time: "5m ago",
-  },
-];
+
 
 function DecisionBadge({
   value,
@@ -41,6 +19,19 @@ function DecisionBadge({
 }
 
 function App() {
+  const [decisions, setDecisions] =
+    useState<Array<{
+      id: string;
+      receiptId: string;
+      agent: string;
+      action: string;
+      decision:
+        | "ALLOW"
+        | "APPROVE"
+        | "BLOCK";
+      policy: string;
+      time: string;
+    }>>([]);
   const [apiOnline, setApiOnline] =
     useState(false);
 
@@ -93,6 +84,83 @@ function App() {
       )
       .catch(() =>
         setPolicies([])
+      );
+  }, []);
+
+  useEffect(() => {
+    const loadDecisions = () => {
+      fetch(
+        "/controlpact-api/v1/decisions"
+      )
+        .then(
+          (response) =>
+            response.json()
+        )
+        .then((data) => {
+          const items =
+            Array.isArray(
+              data?.decisions
+            )
+              ? data.decisions
+              : [];
+
+          setDecisions(
+            items.map(
+              (item: {
+                id: string;
+                receiptId: string;
+                agentId: string;
+                action: string;
+                decision:
+                  | "ALLOW"
+                  | "APPROVE"
+                  | "BLOCK";
+                policyId: string;
+                createdAt: string;
+              }) => ({
+                id: item.id,
+                receiptId:
+                  item.receiptId,
+                agent:
+                  item.agentId,
+                action:
+                  item.action,
+                decision:
+                  item.decision,
+                policy:
+                  item.policyId,
+                time:
+                  new Date(
+                    item.createdAt
+                  ).toLocaleTimeString(
+                    [],
+                    {
+                      hour:
+                        "2-digit",
+                      minute:
+                        "2-digit",
+                    }
+                  ),
+              })
+            )
+          );
+        })
+        .catch(() =>
+          setDecisions([])
+        );
+    };
+
+    loadDecisions();
+
+    const timer =
+      window.setInterval(
+        loadDecisions,
+        1500
+      );
+
+    return () =>
+      window.clearInterval(
+        timer
       );
   }, []);
 
@@ -446,7 +514,7 @@ function App() {
             {decisions.map((item) => (
               <div
                 className="decision-row"
-                key={`${item.agent}-${item.action}`}
+                key={item.id}
               >
                 <div>
                   <strong>{item.action}</strong>
