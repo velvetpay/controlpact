@@ -30,6 +30,8 @@ function App() {
         | "APPROVE"
         | "BLOCK";
       policy: string;
+      referenceId: string;
+      resource?: string;
       time: string;
       approvalStatus?:
         | "PENDING"
@@ -54,6 +56,8 @@ function App() {
       receiptId: string;
       agentId: string;
       action: string;
+      referenceId?: string;
+      resource?: string;
       status: string;
       requestedAt: string;
       decidedAt?: string;
@@ -122,6 +126,8 @@ function App() {
                   | "APPROVE"
                   | "BLOCK";
                 policyId: string;
+                referenceId: string;
+                resource?: string;
                 createdAt: string;
                 approvalStatus?:
                   | "PENDING"
@@ -141,6 +147,12 @@ function App() {
                   item.decision,
                 policy:
                   item.policyId,
+
+                referenceId:
+                  item.referenceId,
+
+                resource:
+                  item.resource,
 
                 approvalStatus:
                   item.approvalStatus,
@@ -458,6 +470,24 @@ function App() {
                       {approval.action}
                     </strong>
 
+                    {approval.referenceId && (
+                      <p className="action-context">
+                        Reference:{" "}
+                        <strong>
+                          {approval.referenceId}
+                        </strong>
+                      </p>
+                    )}
+
+                    {approval.resource && (
+                      <p className="action-context">
+                        Target:{" "}
+                        <strong>
+                          {approval.resource}
+                        </strong>
+                      </p>
+                    )}
+
                     <p>
                       Pending since{" "}
                       {new Date(
@@ -543,6 +573,16 @@ function App() {
                   <span>
                     {item.agent} · {item.policy}
                   </span>
+
+                  <small className="action-reference">
+                    Ref: {item.referenceId}
+                  </small>
+
+                  {item.resource && (
+                    <small className="action-resource">
+                      Target: {item.resource}
+                    </small>
+                  )}
                 </div>
 
                 <div className="decision-status-stack">

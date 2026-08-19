@@ -27,6 +27,7 @@ import {
 type DecisionBody = {
   request?: ActionRequest;
   policyId?: string;
+  referenceId?: string;
 };
 
 type ApprovalDecisionBody = {
@@ -41,6 +42,8 @@ type DecisionRecord = {
   action: string;
   decision: "ALLOW" | "APPROVE" | "BLOCK";
   policyId: string;
+  referenceId: string;
+  resource?: string;
   reason: string;
   matchedRuleIds: string[];
   createdAt: string;
@@ -92,9 +95,31 @@ export const buildApp = () => {
     "/v1/approvals",
     async () => ({
       success: true,
+
       approvals:
         Array.from(
           approvals.values(),
+        ).map(
+          (approval) => {
+            const relatedDecision =
+              decisions.find(
+                (decision) =>
+                  decision.receiptId ===
+                  approval.receiptId,
+              );
+
+            return {
+              ...approval,
+
+              referenceId:
+                relatedDecision
+                  ?.referenceId,
+
+              resource:
+                relatedDecision
+                  ?.resource,
+            };
+          }
         ),
     }),
   );
@@ -317,6 +342,21 @@ export const buildApp = () => {
           });
       }
 
+      const referenceId =
+        String(
+          request.body
+            ?.referenceId ||
+            ""
+        ).trim() ||
+        `action_${randomUUID()}`;
+
+      const resource =
+        String(
+          actionRequest.resource ||
+            ""
+        ).trim() ||
+        undefined;
+
       const policy =
         policyRegistry.get(
           policyId,
@@ -399,6 +439,10 @@ export const buildApp = () => {
 
           policyId:
             result.policyId,
+
+          referenceId,
+
+          resource,
 
           reason:
             result.reason,

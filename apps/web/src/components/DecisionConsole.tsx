@@ -34,19 +34,25 @@ export default function DecisionConsole() {
     useState<Policy[]>([]);
 
   const [policyId, setPolicyId] =
-    useState("finance-policy");
+    useState("sales-policy");
 
   const [agentId, setAgentId] =
-    useState("finance-agent");
+    useState("sales-agent");
 
   const [action, setAction] =
-    useState("refundCustomer");
+    useState("updateCRM");
 
   const [amount, setAmount] =
-    useState("100");
+    useState("");
 
   const [currency, setCurrency] =
     useState("GBP");
+
+  const [referenceId, setReferenceId] =
+    useState("CRM-ACME-104");
+
+  const [resource, setResource] =
+    useState("customer:ACME-104");
 
   const [result, setResult] =
     useState<DecisionResult | null>(null);
@@ -97,26 +103,32 @@ export default function DecisionConsole() {
     setError("");
 
     if (preset === "ALLOW") {
-      setPolicyId("finance-policy");
-      setAgentId("finance-agent");
-      setAction("refundCustomer");
-      setAmount("100");
-      setCurrency("GBP");
+      setPolicyId("sales-policy");
+      setAgentId("sales-agent");
+      setAction("updateCRM");
+      setReferenceId("CRM-ACME-104");
+      setResource("customer:ACME-104");
+      setAmount("");
+      setCurrency("");
       return;
     }
 
     if (preset === "APPROVE") {
-      setPolicyId("finance-policy");
-      setAgentId("finance-agent");
-      setAction("refundCustomer");
-      setAmount("750");
-      setCurrency("GBP");
+      setPolicyId("production-policy");
+      setAgentId("devops-agent");
+      setAction("deployProduction");
+      setReferenceId("DEPLOY-4.7.2");
+      setResource("release:v4.7.2");
+      setAmount("");
+      setCurrency("");
       return;
     }
 
     setPolicyId("production-policy");
     setAgentId("support-agent");
     setAction("deleteAccount");
+    setReferenceId("USER-48291");
+    setResource("user:48291");
     setAmount("");
     setCurrency("");
   };
@@ -150,11 +162,24 @@ export default function DecisionConsole() {
               body:
                 JSON.stringify({
                   policyId,
+
+                  referenceId:
+                    referenceId.trim(),
+
                   request: {
                     agentId:
                       agentId.trim(),
                     action:
                       action.trim(),
+
+                    ...(
+                      resource.trim()
+                        ? {
+                            resource:
+                              resource.trim(),
+                          }
+                        : {}
+                    ),
 
                     ...(
                       numericAmount !==
@@ -330,6 +355,34 @@ export default function DecisionConsole() {
               )
             }
             required
+          />
+        </label>
+
+        <label>
+          <span>Reference</span>
+
+          <input
+            value={referenceId}
+            onChange={(event) =>
+              setReferenceId(
+                event.target.value
+              )
+            }
+            required
+          />
+        </label>
+
+        <label>
+          <span>Target / Resource</span>
+
+          <input
+            value={resource}
+            onChange={(event) =>
+              setResource(
+                event.target.value
+              )
+            }
+            placeholder="Optional"
           />
         </label>
 

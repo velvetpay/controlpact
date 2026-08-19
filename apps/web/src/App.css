@@ -677,3 +677,26 @@ h3 {
   text-align: right;
   color: #64748b;
 }
+
+
+.action-reference,
+.action-resource {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+}
+
+.action-reference {
+  color: #60a5fa;
+}
+
+.action-context {
+  margin: 7px 0 0 !important;
+  color: #94a3b8 !important;
+  font-size: 12px;
+}
+
+.action-context strong {
+  color: #cbd5e1;
+  font-weight: 700;
+}
