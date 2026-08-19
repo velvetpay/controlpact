@@ -10,7 +10,9 @@
                     "dev:web":  "npm run dev --workspace=apps/web",
                     "build:web":  "npm run build --workspace=apps/web",
                     "build:policy":  "npm run build --workspace=@controlpact/policy-engine",
-                    "test:policy":  "npm run build:policy \u0026\u0026 npm run test --workspace=@controlpact/policy-engine"
+                    "test:policy":  "npm run build:policy \u0026\u0026 npm run test --workspace=@controlpact/policy-engine",
+                    "build:api":  "npm run build:policy \u0026\u0026 npm run build --workspace=@controlpact/api",
+                    "test:api":  "npm run build:api \u0026\u0026 npm run test --workspace=@controlpact/api"
                 },
     "devDependencies":  {
                             "typescript":  "^7.0.2"
