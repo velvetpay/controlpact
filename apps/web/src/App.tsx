@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import DecisionConsole from "./components/DecisionConsole";
 
 const decisions = [
   {
@@ -254,6 +255,8 @@ function App() {
             </div>
           </article>
         </section>
+
+        <DecisionConsole />
 
         <section className="panel policy-panel">
           <div className="panel-heading">
