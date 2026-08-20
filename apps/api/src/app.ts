@@ -63,6 +63,7 @@ type DecisionRecord = {
 export const buildApp = () => {
   const app = Fastify({
     logger: false,
+    pluginTimeout: 30000,
   });
 
   const policyRegistry =
