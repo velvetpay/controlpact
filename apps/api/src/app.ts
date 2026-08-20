@@ -24,6 +24,10 @@ import {
   type ApprovalRequest,
 } from "@controlpact/approvals";
 
+import {
+  createControlPactStorage,
+} from "./storage.js";
+
 type DecisionBody = {
   request?: ActionRequest;
   policyId?: string;
@@ -64,14 +68,22 @@ export const buildApp = () => {
   const policyRegistry =
     new PolicyRegistry();
 
-  const approvals =
-    new Map<
-      string,
-      ApprovalRequest
-    >();
+  const storage =
+    createControlPactStorage();
 
-  const decisions:
-    DecisionRecord[] = [];
+  app.addHook(
+    "onReady",
+    async () => {
+      await storage.ready();
+    },
+  );
+
+  app.addHook(
+    "onClose",
+    async () => {
+      await storage.close();
+    },
+  );
 
   app.get(
     "/health",
@@ -93,35 +105,39 @@ export const buildApp = () => {
 
   app.get(
     "/v1/approvals",
-    async () => ({
-      success: true,
+    async () => {
+      const approvals =
+        await storage
+          .listApprovals();
 
-      approvals:
-        Array.from(
-          approvals.values(),
-        ).map(
-          (approval) => {
-            const relatedDecision =
-              decisions.find(
-                (decision) =>
-                  decision.receiptId ===
-                  approval.receiptId,
-              );
+      const enriched =
+        await Promise.all(
+          approvals.map(
+            async (approval) => {
+              const relatedDecision =
+                await storage
+                  .findDecisionByReceiptId(
+                    approval.receiptId,
+                  );
 
-            return {
-              ...approval,
+              return {
+                ...approval,
+                referenceId:
+                  relatedDecision
+                    ?.referenceId,
+                resource:
+                  relatedDecision
+                    ?.resource,
+              };
+            },
+          ),
+        );
 
-              referenceId:
-                relatedDecision
-                  ?.referenceId,
-
-              resource:
-                relatedDecision
-                  ?.resource,
-            };
-          }
-        ),
-    }),
+      return {
+        success: true,
+        approvals: enriched,
+      };
+    },
   );
 
   app.get(
@@ -129,7 +145,8 @@ export const buildApp = () => {
     async () => ({
       success: true,
       decisions:
-        decisions.slice(0, 50),
+        await storage
+          .listDecisions(50),
     }),
   );
 
@@ -146,9 +163,10 @@ export const buildApp = () => {
       reply,
     ) => {
       const approval =
-        approvals.get(
-          request.params.approvalId,
-        );
+        await storage
+          .getApproval(
+            request.params.approvalId,
+          );
 
       if (!approval) {
         return reply
@@ -173,30 +191,32 @@ export const buildApp = () => {
               ?.reason,
           );
 
-        approvals.set(
-          updated.id,
-          updated,
-        );
-
-        const relatedDecision =
-          decisions.find(
-            (decision) =>
-              decision.receiptId ===
-              updated.receiptId,
+        await storage
+          .saveApproval(
+            updated,
           );
 
+        const relatedDecision =
+          await storage
+            .findDecisionByReceiptId(
+              updated.receiptId,
+            );
+
         if (relatedDecision) {
-          relatedDecision.approvalStatus =
-            updated.status;
-
-          relatedDecision.decidedAt =
-            updated.decidedAt;
-
-          relatedDecision.decidedBy =
-            updated.decidedBy;
-
-          relatedDecision.approvalReason =
-            updated.reason;
+          await storage
+            .updateDecisionByReceiptId(
+              updated.receiptId,
+              {
+                approvalStatus:
+                  updated.status,
+                decidedAt:
+                  updated.decidedAt,
+                decidedBy:
+                  updated.decidedBy,
+                approvalReason:
+                  updated.reason,
+              },
+            );
         }
 
         return {
@@ -230,9 +250,10 @@ export const buildApp = () => {
       reply,
     ) => {
       const approval =
-        approvals.get(
-          request.params.approvalId,
-        );
+        await storage
+          .getApproval(
+            request.params.approvalId,
+          );
 
       if (!approval) {
         return reply
@@ -257,30 +278,32 @@ export const buildApp = () => {
               ?.reason,
           );
 
-        approvals.set(
-          updated.id,
-          updated,
-        );
-
-        const relatedDecision =
-          decisions.find(
-            (decision) =>
-              decision.receiptId ===
-              updated.receiptId,
+        await storage
+          .saveApproval(
+            updated,
           );
 
+        const relatedDecision =
+          await storage
+            .findDecisionByReceiptId(
+              updated.receiptId,
+            );
+
         if (relatedDecision) {
-          relatedDecision.approvalStatus =
-            updated.status;
-
-          relatedDecision.decidedAt =
-            updated.decidedAt;
-
-          relatedDecision.decidedBy =
-            updated.decidedBy;
-
-          relatedDecision.approvalReason =
-            updated.reason;
+          await storage
+            .updateDecisionByReceiptId(
+              updated.receiptId,
+              {
+                approvalStatus:
+                  updated.status,
+                decidedAt:
+                  updated.decidedAt,
+                decidedBy:
+                  updated.decidedBy,
+                approvalReason:
+                  updated.reason,
+              },
+            );
         }
 
         return {
@@ -463,9 +486,10 @@ export const buildApp = () => {
               : undefined,
         };
 
-      decisions.unshift(
-        decisionRecord
-      );
+      await storage
+        .saveDecision(
+          decisionRecord,
+        );
 
       let approval:
         ApprovalRequest |
@@ -494,10 +518,10 @@ export const buildApp = () => {
                 .action,
           });
 
-        approvals.set(
-          approval.id,
-          approval,
-        );
+        await storage
+          .saveApproval(
+            approval,
+          );
       }
 
       return {
