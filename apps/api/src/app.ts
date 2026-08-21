@@ -26,7 +26,20 @@ import {
 
 import {
   createControlPactStorage,
+  type StoredSessionRecord,
+  type StoredUserRecord,
 } from "./storage.js";
+
+import {
+  createAccessToken,
+  hashAccessToken,
+  hashPassword,
+  isAcceptablePassword,
+  isValidEmail,
+  normalizeEmail,
+  toPublicUser,
+  verifyPassword,
+} from "./auth.js";
 
 type DecisionBody = {
   request?: ActionRequest;
@@ -38,6 +51,20 @@ type ApprovalDecisionBody = {
   decidedBy?: string;
   reason?: string;
 };
+
+type RegisterBody = {
+  email?: string;
+  password?: string;
+  organizationName?: string;
+};
+
+type LoginBody = {
+  email?: string;
+  password?: string;
+};
+
+const AUTH_SESSION_TTL_MS =
+  30 * 24 * 60 * 60 * 1000;
 
 type DecisionRecord = {
   id: string;
@@ -72,6 +99,124 @@ export const buildApp = () => {
   const storage =
     createControlPactStorage();
 
+  const issueSession =
+    async (
+      userId: string,
+    ) => {
+      const accessToken =
+        createAccessToken();
+
+      const now =
+        new Date();
+
+      const expiresAt =
+        new Date(
+          now.getTime() +
+          AUTH_SESSION_TTL_MS,
+        ).toISOString();
+
+      const session:
+        StoredSessionRecord = {
+          id:
+            randomUUID(),
+
+          userId,
+
+          tokenHash:
+            hashAccessToken(
+              accessToken,
+            ),
+
+          createdAt:
+            now.toISOString(),
+
+          expiresAt,
+        };
+
+      await storage
+        .saveSession(
+          session,
+        );
+
+      return {
+        accessToken,
+        expiresAt,
+      };
+    };
+
+  const getBearerToken =
+    (
+      authorization:
+        string | undefined,
+    ): string | undefined => {
+      const match =
+        String(
+          authorization || "",
+        )
+          .trim()
+          .match(
+            /^Bearer\s+(.+)$/i,
+          );
+
+      return match?.[1]
+        ?.trim() ||
+        undefined;
+    };
+
+  const resolveAuthenticatedUser =
+    async (
+      authorization:
+        string | undefined,
+    ): Promise<
+      StoredUserRecord | undefined
+    > => {
+      const token =
+        getBearerToken(
+          authorization,
+        );
+
+      if (!token) {
+        return undefined;
+      }
+
+      const tokenHash =
+        hashAccessToken(
+          token,
+        );
+
+      const session =
+        await storage
+          .getSessionByTokenHash(
+            tokenHash,
+          );
+
+      if (!session) {
+        return undefined;
+      }
+
+      const expiry =
+        Date.parse(
+          session.expiresAt,
+        );
+
+      if (
+        !Number.isFinite(expiry) ||
+        expiry <= Date.now()
+      ) {
+        await storage
+          .deleteSessionByTokenHash(
+            tokenHash,
+          );
+
+        return undefined;
+      }
+
+      return storage
+        .getUserById(
+          session.userId,
+        );
+    };
+
   app.addHook(
     "onReady",
     async () => {
@@ -93,6 +238,313 @@ export const buildApp = () => {
       service:
         "controlpact-api",
     }),
+  );
+
+  app.post<{
+    Body: RegisterBody;
+  }>(
+    "/v1/auth/register",
+    async (
+      request,
+      reply,
+    ) => {
+      const email =
+        normalizeEmail(
+          request.body?.email,
+        );
+
+      const password =
+        String(
+          request.body?.password ||
+          "",
+        );
+
+      const organizationName =
+        String(
+          request.body
+            ?.organizationName ||
+          "",
+        ).trim();
+
+      if (!isValidEmail(email)) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "A valid email address is required.",
+          });
+      }
+
+      if (
+        !isAcceptablePassword(
+          password,
+        )
+      ) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "Password must be between 12 and 256 characters.",
+          });
+      }
+
+      if (
+        organizationName.length < 2 ||
+        organizationName.length > 120
+      ) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "Organization name must be between 2 and 120 characters.",
+          });
+      }
+
+      const existing =
+        await storage
+          .getUserByEmail(
+            email,
+          );
+
+      if (existing) {
+        return reply
+          .code(409)
+          .send({
+            success: false,
+            message:
+              "An account already exists for this email address.",
+          });
+      }
+
+      const now =
+        new Date()
+          .toISOString();
+
+      const user:
+        StoredUserRecord = {
+          id:
+            randomUUID(),
+
+          email,
+
+          passwordHash:
+            await hashPassword(
+              password,
+            ),
+
+          organizationId:
+            randomUUID(),
+
+          organizationName,
+
+          role:
+            "OWNER",
+
+          createdAt:
+            now,
+
+          updatedAt:
+            now,
+        };
+
+      try {
+        await storage
+          .saveUser(
+            user,
+          );
+      } catch (error) {
+        const code =
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error
+            ? Number(
+                (
+                  error as {
+                    code?: unknown;
+                  }
+                ).code,
+              )
+            : undefined;
+
+        if (code === 11000) {
+          return reply
+            .code(409)
+            .send({
+              success: false,
+              message:
+                "An account already exists for this email address.",
+            });
+        }
+
+        throw error;
+      }
+
+      const session =
+        await issueSession(
+          user.id,
+        );
+
+      return reply
+        .code(201)
+        .send({
+          success: true,
+
+          user:
+            toPublicUser(
+              user,
+            ),
+
+          accessToken:
+            session.accessToken,
+
+          tokenType:
+            "Bearer",
+
+          expiresAt:
+            session.expiresAt,
+        });
+    },
+  );
+
+  app.post<{
+    Body: LoginBody;
+  }>(
+    "/v1/auth/login",
+    async (
+      request,
+      reply,
+    ) => {
+      const email =
+        normalizeEmail(
+          request.body?.email,
+        );
+
+      const password =
+        String(
+          request.body?.password ||
+          "",
+        );
+
+      const user =
+        await storage
+          .getUserByEmail(
+            email,
+          );
+
+      const validPassword =
+        user
+          ? await verifyPassword(
+              password,
+              user.passwordHash,
+            )
+          : false;
+
+      if (
+        !user ||
+        !validPassword
+      ) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            message:
+              "Invalid email or password.",
+          });
+      }
+
+      const session =
+        await issueSession(
+          user.id,
+        );
+
+      return {
+        success: true,
+
+        user:
+          toPublicUser(
+            user,
+          ),
+
+        accessToken:
+          session.accessToken,
+
+        tokenType:
+          "Bearer",
+
+        expiresAt:
+          session.expiresAt,
+      };
+    },
+  );
+
+  app.get(
+    "/v1/auth/me",
+    async (
+      request,
+      reply,
+    ) => {
+      const user =
+        await resolveAuthenticatedUser(
+          request.headers
+            .authorization,
+        );
+
+      if (!user) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            message:
+              "Authentication is required.",
+          });
+      }
+
+      return {
+        success: true,
+        user:
+          toPublicUser(
+            user,
+          ),
+      };
+    },
+  );
+
+  app.post(
+    "/v1/auth/logout",
+    async (
+      request,
+      reply,
+    ) => {
+      const token =
+        getBearerToken(
+          request.headers
+            .authorization,
+        );
+
+      if (!token) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            message:
+              "Authentication is required.",
+          });
+      }
+
+      await storage
+        .deleteSessionByTokenHash(
+          hashAccessToken(
+            token,
+          ),
+        );
+
+      return {
+        success: true,
+      };
+    },
   );
 
   app.get(

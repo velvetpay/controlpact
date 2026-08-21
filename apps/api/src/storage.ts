@@ -43,6 +43,25 @@ export type DecisionLifecycleUpdate =
     >
   >;
 
+export type StoredUserRecord = {
+  id: string;
+  email: string;
+  passwordHash: string;
+  organizationId: string;
+  organizationName: string;
+  role: "OWNER";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type StoredSessionRecord = {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
 export interface ControlPactStorage {
   ready(): Promise<void>;
 
@@ -80,6 +99,36 @@ export interface ControlPactStorage {
     update: DecisionLifecycleUpdate,
   ): Promise<void>;
 
+  getUserByEmail(
+    email: string,
+  ): Promise<
+    StoredUserRecord | undefined
+  >;
+
+  getUserById(
+    id: string,
+  ): Promise<
+    StoredUserRecord | undefined
+  >;
+
+  saveUser(
+    user: StoredUserRecord,
+  ): Promise<void>;
+
+  getSessionByTokenHash(
+    tokenHash: string,
+  ): Promise<
+    StoredSessionRecord | undefined
+  >;
+
+  saveSession(
+    session: StoredSessionRecord,
+  ): Promise<void>;
+
+  deleteSessionByTokenHash(
+    tokenHash: string,
+  ): Promise<void>;
+
   close(): Promise<void>;
 }
 
@@ -98,6 +147,18 @@ const cloneDecision = (
   ],
 });
 
+const cloneUser = (
+  user: StoredUserRecord,
+): StoredUserRecord => ({
+  ...user,
+});
+
+const cloneSession = (
+  session: StoredSessionRecord,
+): StoredSessionRecord => ({
+  ...session,
+});
+
 export class MemoryControlPactStorage
 implements ControlPactStorage {
   private readonly approvals =
@@ -108,6 +169,18 @@ implements ControlPactStorage {
 
   private readonly decisions:
     StoredDecisionRecord[] = [];
+
+  private readonly users =
+    new Map<
+      string,
+      StoredUserRecord
+    >();
+
+  private readonly sessions =
+    new Map<
+      string,
+      StoredSessionRecord
+    >();
 
   async ready(): Promise<void> {
     return;
@@ -214,6 +287,78 @@ implements ControlPactStorage {
     );
   }
 
+  async getUserByEmail(
+    email: string,
+  ): Promise<
+    StoredUserRecord | undefined
+  > {
+    const user =
+      Array.from(
+        this.users.values(),
+      ).find(
+        (item) =>
+          item.email === email,
+      );
+
+    return user
+      ? cloneUser(user)
+      : undefined;
+  }
+
+  async getUserById(
+    id: string,
+  ): Promise<
+    StoredUserRecord | undefined
+  > {
+    const user =
+      this.users.get(id);
+
+    return user
+      ? cloneUser(user)
+      : undefined;
+  }
+
+  async saveUser(
+    user: StoredUserRecord,
+  ): Promise<void> {
+    this.users.set(
+      user.id,
+      cloneUser(user),
+    );
+  }
+
+  async getSessionByTokenHash(
+    tokenHash: string,
+  ): Promise<
+    StoredSessionRecord | undefined
+  > {
+    const session =
+      this.sessions.get(
+        tokenHash,
+      );
+
+    return session
+      ? cloneSession(session)
+      : undefined;
+  }
+
+  async saveSession(
+    session: StoredSessionRecord,
+  ): Promise<void> {
+    this.sessions.set(
+      session.tokenHash,
+      cloneSession(session),
+    );
+  }
+
+  async deleteSessionByTokenHash(
+    tokenHash: string,
+  ): Promise<void> {
+    this.sessions.delete(
+      tokenHash,
+    );
+  }
+
   async close(): Promise<void> {
     return;
   }
@@ -243,6 +388,14 @@ implements ControlPactStorage {
     null;
 
   private decisionCollection:
+    Collection<Document> | null =
+    null;
+
+  private userCollection:
+    Collection<Document> | null =
+    null;
+
+  private sessionCollection:
     Collection<Document> | null =
     null;
 
@@ -280,6 +433,16 @@ implements ControlPactStorage {
         "decisions",
       );
 
+    this.userCollection =
+      database.collection(
+        "users",
+      );
+
+    this.sessionCollection =
+      database.collection(
+        "sessions",
+      );
+
     await Promise.all([
       this.approvalCollection
         .createIndex(
@@ -307,6 +470,35 @@ implements ControlPactStorage {
       this.decisionCollection
         .createIndex({
           createdAt: -1,
+        }),
+
+      this.userCollection
+        .createIndex(
+          { id: 1 },
+          { unique: true },
+        ),
+
+      this.userCollection
+        .createIndex(
+          { email: 1 },
+          { unique: true },
+        ),
+
+      this.sessionCollection
+        .createIndex(
+          { id: 1 },
+          { unique: true },
+        ),
+
+      this.sessionCollection
+        .createIndex(
+          { tokenHash: 1 },
+          { unique: true },
+        ),
+
+      this.sessionCollection
+        .createIndex({
+          expiresAt: 1,
         }),
     ]);
   }
@@ -338,6 +530,26 @@ implements ControlPactStorage {
 
     return this
       .decisionCollection!;
+  }
+
+  private async users():
+    Promise<
+      Collection<Document>
+    > {
+    await this.ready();
+
+    return this
+      .userCollection!;
+  }
+
+  private async sessions():
+    Promise<
+      Collection<Document>
+    > {
+    await this.ready();
+
+    return this
+      .sessionCollection!;
   }
 
   async listApprovals():
@@ -513,6 +725,122 @@ implements ControlPactStorage {
         $set: cleanUpdate,
       },
     );
+  }
+
+  async getUserByEmail(
+    email: string,
+  ): Promise<
+    StoredUserRecord | undefined
+  > {
+    const collection =
+      await this.users();
+
+    const document =
+      await collection.findOne(
+        { email },
+        {
+          projection: {
+            _id: 0,
+          },
+        },
+      );
+
+    return document
+      ? document as unknown as StoredUserRecord
+      : undefined;
+  }
+
+  async getUserById(
+    id: string,
+  ): Promise<
+    StoredUserRecord | undefined
+  > {
+    const collection =
+      await this.users();
+
+    const document =
+      await collection.findOne(
+        { id },
+        {
+          projection: {
+            _id: 0,
+          },
+        },
+      );
+
+    return document
+      ? document as unknown as StoredUserRecord
+      : undefined;
+  }
+
+  async saveUser(
+    user: StoredUserRecord,
+  ): Promise<void> {
+    const collection =
+      await this.users();
+
+    await collection.replaceOne(
+      { id: user.id },
+      cleanDocument({
+        ...user,
+      }),
+      {
+        upsert: true,
+      },
+    );
+  }
+
+  async getSessionByTokenHash(
+    tokenHash: string,
+  ): Promise<
+    StoredSessionRecord | undefined
+  > {
+    const collection =
+      await this.sessions();
+
+    const document =
+      await collection.findOne(
+        { tokenHash },
+        {
+          projection: {
+            _id: 0,
+          },
+        },
+      );
+
+    return document
+      ? document as unknown as StoredSessionRecord
+      : undefined;
+  }
+
+  async saveSession(
+    session: StoredSessionRecord,
+  ): Promise<void> {
+    const collection =
+      await this.sessions();
+
+    await collection.replaceOne(
+      {
+        id: session.id,
+      },
+      cleanDocument({
+        ...session,
+      }),
+      {
+        upsert: true,
+      },
+    );
+  }
+
+  async deleteSessionByTokenHash(
+    tokenHash: string,
+  ): Promise<void> {
+    const collection =
+      await this.sessions();
+
+    await collection.deleteOne({
+      tokenHash,
+    });
   }
 
   async close(): Promise<void> {
