@@ -26,12 +26,14 @@ import {
 
 import {
   createControlPactStorage,
+  type StoredApiKeyRecord,
   type StoredSessionRecord,
   type StoredUserRecord,
 } from "./storage.js";
 
 import {
   createAccessToken,
+  createApiKeySecret,
   hashAccessToken,
   hashPassword,
   isAcceptablePassword,
@@ -63,6 +65,10 @@ type LoginBody = {
   password?: string;
 };
 
+type CreateApiKeyBody = {
+  name?: string;
+};
+
 const AUTH_SESSION_TTL_MS =
   30 * 24 * 60 * 60 * 1000;
 
@@ -73,6 +79,8 @@ type DecisionRecord = {
   action: string;
   decision: "ALLOW" | "APPROVE" | "BLOCK";
   policyId: string;
+  organizationId?: string;
+  apiKeyId?: string;
   referenceId: string;
   resource?: string;
   reason: string;
@@ -215,6 +223,98 @@ export const buildApp = () => {
         .getUserById(
           session.userId,
         );
+    };
+
+  const storageMode =
+    String(
+      process.env
+        .CONTROLPACT_STORAGE ||
+        "memory",
+    )
+      .trim()
+      .toLowerCase();
+
+  const requireApiKeyAuth =
+    storageMode === "mongodb" ||
+    String(
+      process.env
+        .CONTROLPACT_REQUIRE_API_KEYS ||
+        "",
+    )
+      .trim()
+      .toLowerCase() ===
+        "true";
+
+  const toPublicApiKey =
+    (
+      apiKey: StoredApiKeyRecord,
+    ) => ({
+      id:
+        apiKey.id,
+
+      organizationId:
+        apiKey.organizationId,
+
+      name:
+        apiKey.name,
+
+      keyPrefix:
+        apiKey.keyPrefix,
+
+      createdAt:
+        apiKey.createdAt,
+
+      revokedAt:
+        apiKey.revokedAt,
+
+      lastUsedAt:
+        apiKey.lastUsedAt,
+    });
+
+  const resolveApiKey =
+    async (
+      authorization:
+        string | undefined,
+    ): Promise<
+      StoredApiKeyRecord | undefined
+    > => {
+      const token =
+        getBearerToken(
+          authorization,
+        );
+
+      if (
+        !token ||
+        !token.startsWith(
+          "cpk_",
+        )
+      ) {
+        return undefined;
+      }
+
+      const apiKey =
+        await storage
+          .getApiKeyByHash(
+            hashAccessToken(
+              token,
+            ),
+          );
+
+      if (
+        !apiKey ||
+        apiKey.revokedAt
+      ) {
+        return undefined;
+      }
+
+      await storage
+        .markApiKeyUsed(
+          apiKey.id,
+          new Date()
+            .toISOString(),
+        );
+
+      return apiKey;
     };
 
   app.addHook(
@@ -548,6 +648,205 @@ export const buildApp = () => {
   );
 
   app.get(
+    "/v1/api-keys",
+    async (
+      request,
+      reply,
+    ) => {
+      const user =
+        await resolveAuthenticatedUser(
+          request.headers
+            .authorization,
+        );
+
+      if (!user) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            message:
+              "Authentication is required.",
+          });
+      }
+
+      const apiKeys =
+        await storage
+          .listApiKeysByOrganization(
+            user.organizationId,
+          );
+
+      return {
+        success: true,
+
+        apiKeys:
+          apiKeys.map(
+            toPublicApiKey,
+          ),
+      };
+    },
+  );
+
+  app.post<{
+    Body: CreateApiKeyBody;
+  }>(
+    "/v1/api-keys",
+    async (
+      request,
+      reply,
+    ) => {
+      const user =
+        await resolveAuthenticatedUser(
+          request.headers
+            .authorization,
+        );
+
+      if (!user) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            message:
+              "Authentication is required.",
+          });
+      }
+
+      const name =
+        String(
+          request.body?.name ||
+          "",
+        ).trim();
+
+      if (
+        name.length < 2 ||
+        name.length > 80
+      ) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "API key name must be between 2 and 80 characters.",
+          });
+      }
+
+      const secret =
+        createApiKeySecret();
+
+      const apiKey:
+        StoredApiKeyRecord = {
+          id:
+            randomUUID(),
+
+          organizationId:
+            user.organizationId,
+
+          createdByUserId:
+            user.id,
+
+          name,
+
+          keyPrefix:
+            secret.slice(
+              0,
+              12,
+            ),
+
+          keyHash:
+            hashAccessToken(
+              secret,
+            ),
+
+          createdAt:
+            new Date()
+              .toISOString(),
+        };
+
+      await storage
+        .saveApiKey(
+          apiKey,
+        );
+
+      return reply
+        .code(201)
+        .send({
+          success: true,
+
+          apiKey:
+            toPublicApiKey(
+              apiKey,
+            ),
+
+          secret,
+
+          message:
+            "Store this API key securely. It will not be shown again.",
+        });
+    },
+  );
+
+  app.post<{
+    Params: {
+      apiKeyId: string;
+    };
+  }>(
+    "/v1/api-keys/:apiKeyId/revoke",
+    async (
+      request,
+      reply,
+    ) => {
+      const user =
+        await resolveAuthenticatedUser(
+          request.headers
+            .authorization,
+        );
+
+      if (!user) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            message:
+              "Authentication is required.",
+          });
+      }
+
+      const apiKey =
+        await storage
+          .getApiKeyById(
+            request.params
+              .apiKeyId,
+          );
+
+      if (
+        !apiKey ||
+        apiKey.organizationId !==
+          user.organizationId
+      ) {
+        return reply
+          .code(404)
+          .send({
+            success: false,
+            message:
+              "API key was not found.",
+          });
+      }
+
+      if (!apiKey.revokedAt) {
+        await storage
+          .revokeApiKey(
+            apiKey.id,
+            new Date()
+              .toISOString(),
+          );
+      }
+
+      return {
+        success: true,
+      };
+    },
+  );
+
+  app.get(
     "/v1/policies",
     async () => ({
       success: true,
@@ -785,6 +1084,25 @@ export const buildApp = () => {
       request,
       reply,
     ) => {
+      const authenticatedApiKey =
+        await resolveApiKey(
+          request.headers
+            .authorization,
+        );
+
+      if (
+        requireApiKeyAuth &&
+        !authenticatedApiKey
+      ) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            message:
+              "A valid ControlPact API key is required.",
+          });
+      }
+
       const actionRequest =
         request.body?.request;
 
@@ -919,6 +1237,14 @@ export const buildApp = () => {
 
           policyId:
             result.policyId,
+
+          organizationId:
+            authenticatedApiKey
+              ?.organizationId,
+
+          apiKeyId:
+            authenticatedApiKey
+              ?.id,
 
           referenceId,
 

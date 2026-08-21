@@ -18,6 +18,8 @@ export type StoredDecisionRecord = {
     | "APPROVE"
     | "BLOCK";
   policyId: string;
+  organizationId?: string;
+  apiKeyId?: string;
   referenceId: string;
   resource?: string;
   reason: string;
@@ -60,6 +62,18 @@ export type StoredSessionRecord = {
   tokenHash: string;
   createdAt: string;
   expiresAt: string;
+};
+
+export type StoredApiKeyRecord = {
+  id: string;
+  organizationId: string;
+  createdByUserId: string;
+  name: string;
+  keyPrefix: string;
+  keyHash: string;
+  createdAt: string;
+  revokedAt?: string;
+  lastUsedAt?: string;
 };
 
 export interface ControlPactStorage {
@@ -129,6 +143,38 @@ export interface ControlPactStorage {
     tokenHash: string,
   ): Promise<void>;
 
+  listApiKeysByOrganization(
+    organizationId: string,
+  ): Promise<
+    StoredApiKeyRecord[]
+  >;
+
+  getApiKeyById(
+    id: string,
+  ): Promise<
+    StoredApiKeyRecord | undefined
+  >;
+
+  getApiKeyByHash(
+    keyHash: string,
+  ): Promise<
+    StoredApiKeyRecord | undefined
+  >;
+
+  saveApiKey(
+    apiKey: StoredApiKeyRecord,
+  ): Promise<void>;
+
+  revokeApiKey(
+    id: string,
+    revokedAt: string,
+  ): Promise<void>;
+
+  markApiKeyUsed(
+    id: string,
+    lastUsedAt: string,
+  ): Promise<void>;
+
   close(): Promise<void>;
 }
 
@@ -159,6 +205,12 @@ const cloneSession = (
   ...session,
 });
 
+const cloneApiKey = (
+  apiKey: StoredApiKeyRecord,
+): StoredApiKeyRecord => ({
+  ...apiKey,
+});
+
 export class MemoryControlPactStorage
 implements ControlPactStorage {
   private readonly approvals =
@@ -180,6 +232,12 @@ implements ControlPactStorage {
     new Map<
       string,
       StoredSessionRecord
+    >();
+
+  private readonly apiKeys =
+    new Map<
+      string,
+      StoredApiKeyRecord
     >();
 
   async ready(): Promise<void> {
@@ -359,6 +417,99 @@ implements ControlPactStorage {
     );
   }
 
+  async listApiKeysByOrganization(
+    organizationId: string,
+  ): Promise<
+    StoredApiKeyRecord[]
+  > {
+    return Array.from(
+      this.apiKeys.values(),
+    )
+      .filter(
+        (item) =>
+          item.organizationId ===
+          organizationId,
+      )
+      .sort(
+        (a, b) =>
+          b.createdAt.localeCompare(
+            a.createdAt,
+          ),
+      )
+      .map(cloneApiKey);
+  }
+
+  async getApiKeyById(
+    id: string,
+  ): Promise<
+    StoredApiKeyRecord | undefined
+  > {
+    const apiKey =
+      this.apiKeys.get(id);
+
+    return apiKey
+      ? cloneApiKey(apiKey)
+      : undefined;
+  }
+
+  async getApiKeyByHash(
+    keyHash: string,
+  ): Promise<
+    StoredApiKeyRecord | undefined
+  > {
+    const apiKey =
+      Array.from(
+        this.apiKeys.values(),
+      ).find(
+        (item) =>
+          item.keyHash ===
+          keyHash,
+      );
+
+    return apiKey
+      ? cloneApiKey(apiKey)
+      : undefined;
+  }
+
+  async saveApiKey(
+    apiKey: StoredApiKeyRecord,
+  ): Promise<void> {
+    this.apiKeys.set(
+      apiKey.id,
+      cloneApiKey(apiKey),
+    );
+  }
+
+  async revokeApiKey(
+    id: string,
+    revokedAt: string,
+  ): Promise<void> {
+    const apiKey =
+      this.apiKeys.get(id);
+
+    if (!apiKey) {
+      return;
+    }
+
+    apiKey.revokedAt =
+      revokedAt;
+  }
+
+  async markApiKeyUsed(
+    id: string,
+    lastUsedAt: string,
+  ): Promise<void> {
+    const apiKey =
+      this.apiKeys.get(id);
+
+    if (!apiKey) {
+      return;
+    }
+
+    apiKey.lastUsedAt =
+      lastUsedAt;
+  }
+
   async close(): Promise<void> {
     return;
   }
@@ -396,6 +547,10 @@ implements ControlPactStorage {
     null;
 
   private sessionCollection:
+    Collection<Document> | null =
+    null;
+
+  private apiKeyCollection:
     Collection<Document> | null =
     null;
 
@@ -441,6 +596,11 @@ implements ControlPactStorage {
     this.sessionCollection =
       database.collection(
         "sessions",
+      );
+
+    this.apiKeyCollection =
+      database.collection(
+        "apiKeys",
       );
 
     await Promise.all([
@@ -500,6 +660,24 @@ implements ControlPactStorage {
         .createIndex({
           expiresAt: 1,
         }),
+
+      this.apiKeyCollection
+        .createIndex(
+          { id: 1 },
+          { unique: true },
+        ),
+
+      this.apiKeyCollection
+        .createIndex(
+          { keyHash: 1 },
+          { unique: true },
+        ),
+
+      this.apiKeyCollection
+        .createIndex({
+          organizationId: 1,
+          createdAt: -1,
+        }),
     ]);
   }
 
@@ -550,6 +728,16 @@ implements ControlPactStorage {
 
     return this
       .sessionCollection!;
+  }
+
+  private async apiKeys():
+    Promise<
+      Collection<Document>
+    > {
+    await this.ready();
+
+    return this
+      .apiKeyCollection!;
   }
 
   async listApprovals():
@@ -841,6 +1029,140 @@ implements ControlPactStorage {
     await collection.deleteOne({
       tokenHash,
     });
+  }
+
+  async listApiKeysByOrganization(
+    organizationId: string,
+  ): Promise<
+    StoredApiKeyRecord[]
+  > {
+    const collection =
+      await this.apiKeys();
+
+    const documents =
+      await collection
+        .find(
+          { organizationId },
+          {
+            projection: {
+              _id: 0,
+            },
+          },
+        )
+        .sort({
+          createdAt: -1,
+        })
+        .toArray();
+
+    return (
+      documents as unknown as
+        StoredApiKeyRecord[]
+    );
+  }
+
+  async getApiKeyById(
+    id: string,
+  ): Promise<
+    StoredApiKeyRecord | undefined
+  > {
+    const collection =
+      await this.apiKeys();
+
+    const document =
+      await collection.findOne(
+        { id },
+        {
+          projection: {
+            _id: 0,
+          },
+        },
+      );
+
+    return document
+      ? (
+          document as unknown as
+            StoredApiKeyRecord
+        )
+      : undefined;
+  }
+
+  async getApiKeyByHash(
+    keyHash: string,
+  ): Promise<
+    StoredApiKeyRecord | undefined
+  > {
+    const collection =
+      await this.apiKeys();
+
+    const document =
+      await collection.findOne(
+        { keyHash },
+        {
+          projection: {
+            _id: 0,
+          },
+        },
+      );
+
+    return document
+      ? (
+          document as unknown as
+            StoredApiKeyRecord
+        )
+      : undefined;
+  }
+
+  async saveApiKey(
+    apiKey: StoredApiKeyRecord,
+  ): Promise<void> {
+    const collection =
+      await this.apiKeys();
+
+    await collection.replaceOne(
+      {
+        id: apiKey.id,
+      },
+      cleanDocument({
+        ...apiKey,
+      }),
+      {
+        upsert: true,
+      },
+    );
+  }
+
+  async revokeApiKey(
+    id: string,
+    revokedAt: string,
+  ): Promise<void> {
+    const collection =
+      await this.apiKeys();
+
+    await collection.updateOne(
+      { id },
+      {
+        $set: {
+          revokedAt,
+        },
+      },
+    );
+  }
+
+  async markApiKeyUsed(
+    id: string,
+    lastUsedAt: string,
+  ): Promise<void> {
+    const collection =
+      await this.apiKeys();
+
+    await collection.updateOne(
+      { id },
+      {
+        $set: {
+          lastUsedAt,
+        },
+      },
+    );
   }
 
   async close(): Promise<void> {

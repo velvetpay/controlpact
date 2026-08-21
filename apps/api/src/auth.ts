@@ -117,6 +117,11 @@ export const createAccessToken =
     randomBytes(32)
       .toString("base64url");
 
+export const createApiKeySecret =
+  (): string =>
+    `cpk_${randomBytes(32)
+      .toString("base64url")}`;
+
 export const hashAccessToken = (
   token: string,
 ): string =>
