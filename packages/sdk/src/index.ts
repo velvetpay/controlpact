@@ -3,16 +3,23 @@ export type ControlPactDecision =
   | "APPROVE"
   | "BLOCK";
 
+export type ControlPactActionContext =
+  Record<string, unknown>;
+
 export type ControlPactActionRequest = {
-  agentId: string;
+  agentId?: string;
   action: string;
   resource?: string;
+  amount?: number;
+  currency?: string;
+  context?: ControlPactActionContext;
   [key: string]: unknown;
 };
 
 export type ControlPactDecisionRequest = {
-  policyId: string;
+  policyId?: string;
   referenceId?: string;
+  idempotencyKey?: string;
   request: ControlPactActionRequest;
 };
 
@@ -21,8 +28,10 @@ export type ControlPactDecisionResponse = {
   result: {
     decision: ControlPactDecision;
     policyId: string;
+    policyVersion?: number;
     reason: string;
     matchedRuleIds: string[];
+    requiredApproverRoles?: string[];
   };
   receipt: {
     payload: {
@@ -37,6 +46,34 @@ export type ControlPactDecisionResponse = {
       issuedAt: string;
     };
     signature: string;
+  };
+  approval: Record<string, unknown> | null;
+  idempotentReplay?: boolean;
+};
+
+export type ControlPactDecisionStatusResponse = {
+  success: true;
+  decision: {
+    id: string;
+    receiptId: string;
+    agentId: string;
+    action: string;
+    decision: ControlPactDecision;
+    policyId: string;
+    policyVersion?: number;
+    referenceId: string;
+    resource?: string;
+    reason: string;
+    matchedRuleIds: string[];
+    requiredApproverRoles?: string[];
+    createdAt: string;
+    approvalStatus?:
+      | "PENDING"
+      | "APPROVED"
+      | "REJECTED";
+    decidedAt?: string;
+    decidedBy?: string;
+    approvalReason?: string;
   };
   approval: Record<string, unknown> | null;
 };
@@ -75,7 +112,8 @@ export class ControlPactClient {
         .replace(/\/+$/, "");
 
     const apiKey =
-      String(options?.apiKey || "").trim();
+      String(options?.apiKey || "")
+        .trim();
 
     if (!baseUrl) {
       throw new Error(
@@ -128,56 +166,27 @@ export class ControlPactClient {
     this.fetchImpl = fetchImpl;
   }
 
-  async decide(
-    input: ControlPactDecisionRequest,
-  ): Promise<ControlPactDecisionResponse> {
-    const policyId =
-      String(input?.policyId || "").trim();
-
-    const agentId =
-      String(
-        input?.request?.agentId || "",
-      ).trim();
-
-    const action =
-      String(
-        input?.request?.action || "",
-      ).trim();
-
-    if (!policyId) {
-      throw new Error(
-        "ControlPact policyId is required.",
-      );
-    }
-
-    if (!agentId || !action) {
-      throw new Error(
-        "ControlPact request.agentId and request.action are required.",
-      );
-    }
-
+  private async request<T>(
+    path: string,
+    init: RequestInit = {},
+  ): Promise<T> {
     const response =
       await this.fetchImpl(
-        `${this.baseUrl}/v1/decisions`,
+        `${this.baseUrl}${path}`,
         {
-          method: "POST",
+          ...init,
           headers: {
             Authorization:
               `Bearer ${this.apiKey}`,
-            "Content-Type":
-              "application/json",
             Accept: "application/json",
+            ...(init.body
+              ? {
+                  "Content-Type":
+                    "application/json",
+                }
+              : {}),
+            ...(init.headers || {}),
           },
-          body: JSON.stringify({
-            policyId,
-            referenceId:
-              input.referenceId,
-            request: {
-              ...input.request,
-              agentId,
-              action,
-            },
-          }),
         },
       );
 
@@ -195,9 +204,11 @@ export class ControlPactClient {
         typeof payload === "object" &&
         "message" in payload
           ? String(
-              (payload as {
-                message?: unknown;
-              }).message ||
+              (
+                payload as {
+                  message?: unknown;
+                }
+              ).message ||
               `ControlPact API request failed with HTTP ${response.status}.`,
             )
           : `ControlPact API request failed with HTTP ${response.status}.`;
@@ -209,22 +220,136 @@ export class ControlPactClient {
       );
     }
 
+    return payload as T;
+  }
+
+  async decide(
+    input: ControlPactDecisionRequest,
+  ): Promise<ControlPactDecisionResponse> {
+    const policyId =
+      String(input?.policyId || "")
+        .trim();
+
+    const agentId =
+      String(
+        input?.request?.agentId || "",
+      ).trim();
+
+    const action =
+      String(
+        input?.request?.action || "",
+      ).trim();
+
+    if (!action) {
+      throw new Error(
+        "ControlPact request.action is required.",
+      );
+    }
+
+    const idempotencyKey =
+      String(
+        input?.idempotencyKey ||
+        "",
+      ).trim();
+
+    if (
+      input?.idempotencyKey !==
+        undefined &&
+      !idempotencyKey
+    ) {
+      throw new Error(
+        "ControlPact idempotencyKey cannot be empty.",
+      );
+    }
+
+    if (
+      idempotencyKey.length >
+      200
+    ) {
+      throw new Error(
+        "ControlPact idempotencyKey must not exceed 200 characters.",
+      );
+    }
+
+    const payload =
+      await this.request<
+        ControlPactDecisionResponse
+      >(
+        "/v1/decisions",
+        {
+          method: "POST",
+          headers:
+            idempotencyKey
+              ? {
+                  "Idempotency-Key":
+                    idempotencyKey,
+                }
+              : undefined,
+          body: JSON.stringify({
+            policyId:
+              policyId ||
+              undefined,
+            referenceId:
+              input.referenceId,
+            request: {
+              ...input.request,
+              agentId:
+                agentId ||
+                undefined,
+              action,
+            },
+          }),
+        },
+      );
+
     if (
       !payload ||
-      typeof payload !== "object" ||
-      !("success" in payload) ||
-      (payload as {
-        success?: unknown;
-      }).success !== true
+      payload.success !== true
     ) {
       throw new ControlPactApiError(
         "ControlPact API returned an invalid response.",
-        response.status,
+        200,
         payload,
       );
     }
 
-    return payload as
-      ControlPactDecisionResponse;
+    return payload;
+  }
+  async getDecision(
+    decisionId: string,
+  ): Promise<ControlPactDecisionStatusResponse> {
+    const id =
+      String(
+        decisionId || "",
+      ).trim();
+
+    if (!id) {
+      throw new Error(
+        "ControlPact decisionId is required.",
+      );
+    }
+
+    const payload =
+      await this.request<
+        ControlPactDecisionStatusResponse
+      >(
+        `/v1/decisions/${encodeURIComponent(id)}`,
+        {
+          method: "GET",
+        },
+      );
+
+    if (
+      !payload ||
+      payload.success !== true
+    ) {
+      throw new ControlPactApiError(
+        "ControlPact API returned an invalid decision status response.",
+        200,
+        payload,
+      );
+    }
+
+    return payload;
   }
 }

@@ -11,6 +11,8 @@ import type {
 export type StoredDecisionRecord = {
   id: string;
   receiptId: string;
+  receiptSignature?: string;
+  receiptIssuedAt?: string;
   agentId: string;
   action: string;
   decision:
@@ -18,8 +20,12 @@ export type StoredDecisionRecord = {
     | "APPROVE"
     | "BLOCK";
   policyId: string;
+  policyVersion?: number;
+  requiredApproverRoles?: string[];
   organizationId?: string;
   apiKeyId?: string;
+  idempotencyKey?: string;
+  idempotencyRequestHash?: string;
   referenceId: string;
   resource?: string;
   reason: string;
@@ -51,7 +57,12 @@ export type StoredUserRecord = {
   passwordHash: string;
   organizationId: string;
   organizationName: string;
-  role: "OWNER";
+  role:
+    | "OWNER"
+    | "ADMIN"
+    | "APPROVER"
+    | "AUDITOR"
+    | "VIEWER";
   createdAt: string;
   updatedAt: string;
 };
@@ -71,6 +82,10 @@ export type StoredApiKeyRecord = {
   name: string;
   keyPrefix: string;
   keyHash: string;
+  environmentId?: string;
+  agentId?: string;
+  policyId?: string;
+  scopes?: string[];
   createdAt: string;
   revokedAt?: string;
   lastUsedAt?: string;
@@ -100,6 +115,20 @@ export interface ControlPactStorage {
 
   findDecisionByReceiptId(
     receiptId: string,
+  ): Promise<
+    StoredDecisionRecord | undefined
+  >;
+
+  getDecisionById(
+    id: string,
+  ): Promise<
+    StoredDecisionRecord | undefined
+  >;
+
+  findDecisionByIdempotency(
+    organizationId: string,
+    apiKeyId: string,
+    idempotencyKey: string,
   ): Promise<
     StoredDecisionRecord | undefined
   >;
@@ -191,6 +220,12 @@ const cloneDecision = (
   matchedRuleIds: [
     ...decision.matchedRuleIds,
   ],
+  requiredApproverRoles:
+    decision.requiredApproverRoles
+      ? [
+          ...decision.requiredApproverRoles,
+        ]
+      : undefined,
 });
 
 const cloneUser = (
@@ -209,6 +244,10 @@ const cloneApiKey = (
   apiKey: StoredApiKeyRecord,
 ): StoredApiKeyRecord => ({
   ...apiKey,
+  scopes:
+    apiKey.scopes
+      ? [...apiKey.scopes]
+      : undefined,
 });
 
 export class MemoryControlPactStorage
@@ -296,6 +335,45 @@ implements ControlPactStorage {
         (item) =>
           item.receiptId ===
           receiptId,
+      );
+
+    return decision
+      ? cloneDecision(decision)
+      : undefined;
+  }
+
+  async getDecisionById(
+    id: string,
+  ): Promise<
+    StoredDecisionRecord | undefined
+  > {
+    const decision =
+      this.decisions.find(
+        (item) =>
+          item.id === id,
+      );
+
+    return decision
+      ? cloneDecision(decision)
+      : undefined;
+  }
+
+  async findDecisionByIdempotency(
+    organizationId: string,
+    apiKeyId: string,
+    idempotencyKey: string,
+  ): Promise<
+    StoredDecisionRecord | undefined
+  > {
+    const decision =
+      this.decisions.find(
+        (item) =>
+          item.organizationId ===
+            organizationId &&
+          item.apiKeyId ===
+            apiKeyId &&
+          item.idempotencyKey ===
+            idempotencyKey,
       );
 
     return decision
@@ -632,6 +710,23 @@ implements ControlPactStorage {
           createdAt: -1,
         }),
 
+      this.decisionCollection
+        .createIndex(
+          {
+            organizationId: 1,
+            apiKeyId: 1,
+            idempotencyKey: 1,
+          },
+          {
+            unique: true,
+            partialFilterExpression: {
+              idempotencyKey: {
+                $type: "string",
+              },
+            },
+          },
+        ),
+
       this.userCollection
         .createIndex(
           { id: 1 },
@@ -863,6 +958,64 @@ implements ControlPactStorage {
     return document
       ? (
           document as unknown as StoredDecisionRecord
+        )
+      : undefined;
+  }
+
+  async getDecisionById(
+    id: string,
+  ): Promise<
+    StoredDecisionRecord | undefined
+  > {
+    const collection =
+      await this.decisions();
+
+    const document =
+      await collection.findOne(
+        { id },
+        {
+          projection: {
+            _id: 0,
+          },
+        },
+      );
+
+    return document
+      ? (
+          document as unknown as
+            StoredDecisionRecord
+        )
+      : undefined;
+  }
+
+  async findDecisionByIdempotency(
+    organizationId: string,
+    apiKeyId: string,
+    idempotencyKey: string,
+  ): Promise<
+    StoredDecisionRecord | undefined
+  > {
+    const collection =
+      await this.decisions();
+
+    const document =
+      await collection.findOne(
+        {
+          organizationId,
+          apiKeyId,
+          idempotencyKey,
+        },
+        {
+          projection: {
+            _id: 0,
+          },
+        },
+      );
+
+    return document
+      ? (
+          document as unknown as
+            StoredDecisionRecord
         )
       : undefined;
   }

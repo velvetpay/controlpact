@@ -29,7 +29,13 @@ type Receipt = {
   signature: string;
 };
 
-export default function DecisionConsole() {
+type DecisionConsoleProps = {
+  apiKey: string;
+};
+
+export default function DecisionConsole({
+  apiKey,
+}: DecisionConsoleProps) {
   const [policies, setPolicies] =
     useState<Policy[]>([]);
 
@@ -139,6 +145,13 @@ export default function DecisionConsole() {
     ) => {
       event.preventDefault();
 
+      if (!apiKey) {
+        setError(
+          "Create an organisation API key above before evaluating a live action.",
+        );
+        return;
+      }
+
       setBusy(true);
       setError("");
       setResult(null);
@@ -156,6 +169,9 @@ export default function DecisionConsole() {
             {
               method: "POST",
               headers: {
+                Authorization:
+                  `Bearer ${apiKey}`,
+
                 "Content-Type":
                   "application/json",
               },
@@ -258,7 +274,7 @@ export default function DecisionConsole() {
     };
 
   return (
-    <section className="panel decision-console">
+    <section id="decisions" className="panel decision-console">
       <div className="panel-heading">
         <div>
           <p className="eyebrow">
@@ -268,8 +284,16 @@ export default function DecisionConsole() {
           <h3>Decision Console</h3>
         </div>
 
-        <span className="live-chip">
-          REAL API
+        <span
+          className={
+            apiKey
+              ? "live-chip"
+              : "api-key-required-chip"
+          }
+        >
+          {apiKey
+            ? "REAL API - KEY READY"
+            : "API KEY REQUIRED"}
         </span>
       </div>
 
@@ -417,7 +441,7 @@ export default function DecisionConsole() {
 
         <button
           className="evaluate-button"
-          disabled={busy}
+          disabled={busy || !apiKey}
           type="submit"
         >
           {busy

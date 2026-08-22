@@ -1,684 +1,392 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+import {
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 import "./App.css";
-import DecisionConsole from "./components/DecisionConsole";
+import "./visible-platform.css";
+import AccountAccess, {
+  type ControlPactAccountUser,
+} from "./components/AccountAccess";
+import ControlPactLayout from "./layout/ControlPactLayout";
+import OverviewPage from "./pages/OverviewPage";
+import EnvironmentsPage from "./pages/EnvironmentsPage";
+import PoliciesPage from "./pages/PoliciesPage";
+import AgentsPage from "./pages/AgentsPage";
+import AssignmentsPage from "./pages/AssignmentsPage";
+import ApiKeysPage from "./pages/ApiKeysPage";
+import DecisionsPage from "./pages/DecisionsPage";
+import ApprovalsPage from "./pages/ApprovalsPage";
+import AuditPage from "./pages/AuditPage";
+import SettingsPage from "./pages/SettingsPage";
 
+export default function App() {
+  const [
+    accessToken,
+    setAccessToken,
+  ] =
+    useState(
+      () =>
+        sessionStorage.getItem(
+          "controlpactOwnerToken",
+        ) || "",
+    );
 
+  const [
+    accountUser,
+    setAccountUser,
+  ] =
+    useState<
+      ControlPactAccountUser |
+      null
+    >(null);
 
-function DecisionBadge({
-  value,
-}: {
-  value: string;
-}) {
-  return (
-    <span
-      className={`decision decision-${value.toLowerCase()}`}
-    >
-      {value}
-    </span>
-  );
-}
-
-function App() {
-  const [decisions, setDecisions] =
-    useState<Array<{
-      id: string;
-      receiptId: string;
-      agent: string;
-      action: string;
-      decision:
-        | "ALLOW"
-        | "APPROVE"
-        | "BLOCK";
-      policy: string;
-      referenceId: string;
-      resource?: string;
-      time: string;
-      approvalStatus?:
-        | "PENDING"
-        | "APPROVED"
-        | "REJECTED";
-      decidedBy?: string;
-      approvalReason?: string;
-    }>>([]);
-  const [apiOnline, setApiOnline] =
+  const [
+    authReady,
+    setAuthReady,
+  ] =
     useState(false);
 
-  const [policies, setPolicies] =
-    useState<Array<{
-      id: string;
-      defaultDecision: string;
-      ruleCount: number;
-    }>>([]);
+  const [
+    activeApiKey,
+    setActiveApiKey,
+  ] =
+    useState(
+      () =>
+        sessionStorage.getItem(
+          "controlpactAgentApiKey",
+        ) || "",
+    );
 
-  const [approvals, setApprovals] =
-    useState<Array<{
-      id: string;
-      receiptId: string;
-      agentId: string;
-      action: string;
-      referenceId?: string;
-      resource?: string;
-      status: string;
-      requestedAt: string;
-      decidedAt?: string;
-      decidedBy?: string;
-      reason?: string;
-    }>>([]);
-
-  const [approvalBusy, setApprovalBusy] =
-    useState("");
-
-  const [approvalMessage, setApprovalMessage] =
-    useState("");
-
-  useEffect(() => {
-    fetch("/controlpact-api/health")
-      .then((response) => response.json())
-      .then((data) =>
-        setApiOnline(
-          data?.success === true
-        )
-      )
-      .catch(() =>
-        setApiOnline(false)
-      );
-
-    fetch("/controlpact-api/v1/policies")
-      .then((response) => response.json())
-      .then((data) =>
-        setPolicies(
-          Array.isArray(data?.policies)
-            ? data.policies
-            : []
-        )
-      )
-      .catch(() =>
-        setPolicies([])
-      );
-  }, []);
-
-  useEffect(() => {
-    const loadDecisions = () => {
-      fetch(
-        "/controlpact-api/v1/decisions"
-      )
-        .then(
-          (response) =>
-            response.json()
-        )
-        .then((data) => {
-          const items =
-            Array.isArray(
-              data?.decisions
-            )
-              ? data.decisions
-              : [];
-
-          setDecisions(
-            items.map(
-              (item: {
-                id: string;
-                receiptId: string;
-                agentId: string;
-                action: string;
-                decision:
-                  | "ALLOW"
-                  | "APPROVE"
-                  | "BLOCK";
-                policyId: string;
-                referenceId: string;
-                resource?: string;
-                createdAt: string;
-                approvalStatus?:
-                  | "PENDING"
-                  | "APPROVED"
-                  | "REJECTED";
-                decidedBy?: string;
-                approvalReason?: string;
-              }) => ({
-                id: item.id,
-                receiptId:
-                  item.receiptId,
-                agent:
-                  item.agentId,
-                action:
-                  item.action,
-                decision:
-                  item.decision,
-                policy:
-                  item.policyId,
-
-                referenceId:
-                  item.referenceId,
-
-                resource:
-                  item.resource,
-
-                approvalStatus:
-                  item.approvalStatus,
-
-                decidedBy:
-                  item.decidedBy,
-
-                approvalReason:
-                  item.approvalReason,
-
-                time:
-                  new Date(
-                    item.createdAt
-                  ).toLocaleTimeString(
-                    [],
-                    {
-                      hour:
-                        "2-digit",
-                      minute:
-                        "2-digit",
-                    }
-                  ),
-              })
-            )
-          );
-        })
-        .catch(() =>
-          setDecisions([])
-        );
-    };
-
-    loadDecisions();
-
-    const timer =
-      window.setInterval(
-        loadDecisions,
-        1500
-      );
-
-    return () =>
-      window.clearInterval(
-        timer
-      );
-  }, []);
-
-  useEffect(() => {
-    const loadApprovals = () => {
-      fetch("/controlpact-api/v1/approvals")
-        .then((response) => response.json())
-        .then((data) =>
-          setApprovals(
-            Array.isArray(data?.approvals)
-              ? data.approvals
-              : []
-          )
-        )
-        .catch(() =>
-          setApprovals([])
-        );
-    };
-
-    loadApprovals();
-
-    const timer =
-      window.setInterval(
-        loadApprovals,
-        1500
-      );
-
-    return () =>
-      window.clearInterval(timer);
-  }, []);
-
-  const decideApproval =
-    async (
-      approvalId: string,
-      decision:
-        | "approve"
-        | "reject",
+  const handleAuthenticated =
+    (
+      token: string,
+      user:
+        ControlPactAccountUser,
     ) => {
-      const decidedBy =
-        window.prompt(
-          "Reviewer name",
-          "controlpact-admin"
-        );
+      sessionStorage.setItem(
+        "controlpactOwnerToken",
+        token,
+      );
 
-      if (!decidedBy?.trim()) {
-        return;
+      setAccessToken(token);
+      setAccountUser(user);
+      setAuthReady(true);
+    };
+
+  const handleActiveApiKey =
+    (
+      apiKey: string,
+    ) => {
+      if (apiKey) {
+        sessionStorage.setItem(
+          "controlpactAgentApiKey",
+          apiKey,
+        );
+      } else {
+        sessionStorage.removeItem(
+          "controlpactAgentApiKey",
+        );
       }
 
-      const reason =
-        window.prompt(
-          decision === "approve"
-            ? "Approval reason (optional)"
-            : "Rejection reason",
-          ""
-        ) || "";
+      setActiveApiKey(apiKey);
+    };
 
-      setApprovalBusy(approvalId);
-      setApprovalMessage("");
-
+  const handleLogout =
+    async () => {
       try {
-        const response =
+        if (accessToken) {
           await fetch(
-            `/controlpact-api/v1/approvals/${approvalId}/${decision}`,
+            "/controlpact-api/v1/auth/logout",
             {
               method: "POST",
               headers: {
-                "Content-Type":
-                  "application/json",
+                Authorization:
+                  `Bearer ${accessToken}`,
               },
-              body:
-                JSON.stringify({
-                  decidedBy:
-                    decidedBy.trim(),
-                  reason:
-                    reason.trim(),
-                }),
-            }
-          );
-
-        const data =
-          await response
-            .json()
-            .catch(() => null);
-
-        if (
-          !response.ok ||
-          !data?.success
-        ) {
-          throw new Error(
-            data?.message ||
-              "Approval decision failed."
+            },
           );
         }
-
-        setApprovals(
-          (current) =>
-            current.map(
-              (item) =>
-                item.id ===
-                approvalId
-                  ? data.approval
-                  : item
-            )
-        );
-
-        setApprovalMessage(
-          `${data.approval.action} ${data.approval.status.toLowerCase()} by ${data.approval.decidedBy}.`
-        );
-      } catch (error) {
-        setApprovalMessage(
-          error instanceof Error
-            ? error.message
-            : "Approval decision failed."
-        );
       } finally {
-        setApprovalBusy("");
+        sessionStorage.removeItem(
+          "controlpactOwnerToken",
+        );
+
+        sessionStorage.removeItem(
+          "controlpactAgentApiKey",
+        );
+
+        setAccessToken("");
+        setAccountUser(null);
+        setActiveApiKey("");
+        setAuthReady(true);
       }
     };
+
+  useEffect(() => {
+    if (!accessToken) {
+      setAccountUser(null);
+      setAuthReady(true);
+      return;
+    }
+
+    setAuthReady(false);
+
+    fetch(
+      "/controlpact-api/v1/auth/me",
+      {
+        headers: {
+          Authorization:
+            `Bearer ${accessToken}`,
+        },
+      },
+    )
+      .then(
+        async (response) => {
+          const data =
+            await response.json();
+
+          if (
+            !response.ok ||
+            !data?.success ||
+            !data?.user
+          ) {
+            throw new Error(
+              "Session expired.",
+            );
+          }
+
+          setAccountUser(
+            data.user,
+          );
+        },
+      )
+      .catch(() => {
+        sessionStorage.removeItem(
+          "controlpactOwnerToken",
+        );
+
+        sessionStorage.removeItem(
+          "controlpactAgentApiKey",
+        );
+
+        setAccessToken("");
+        setAccountUser(null);
+        setActiveApiKey("");
+      })
+      .finally(() =>
+        setAuthReady(true),
+      );
+  }, [accessToken]);
+
+  if (!authReady) {
+    return (
+      <div className="cp-auth-loading">
+        Loading ControlPact...
+      </div>
+    );
+  }
+
+  if (!accountUser) {
+    return (
+      <AccountAccess
+        onAuthenticated={
+          handleAuthenticated
+        }
+      />
+    );
+  }
+
+  const role =
+    String(
+      accountUser.role || "",
+    ).toUpperCase();
+
+  const canManage =
+    role === "OWNER" ||
+    role === "ADMIN";
+
+  const fallback =
+    canManage
+      ? "/overview"
+      : "/decisions";
+
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">CP</div>
-          <div>
-            <strong>ControlPact</strong>
-            <span>Agent Control Plane</span>
-          </div>
-        </div>
-
-        <nav>
-          <button className="nav-active">
-            Overview
-          </button>
-          <button>Decisions</button>
-          <button>Approvals</button>
-          <button>Policies</button>
-          <button>Agents</button>
-          <button>Audit Receipts</button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <span
-            className="status-dot"
-            style={{
-              background: apiOnline
-                ? "#22c55e"
-                : "#ef4444",
-            }}
+    <Routes>
+      <Route
+        element={
+          <ControlPactLayout
+            user={accountUser}
+            onLogout={
+              handleLogout
+            }
           />
-          {apiOnline
-            ? "ControlPact API operational"
-            : "ControlPact API offline"}
-        </div>
-      </aside>
+        }
+      >
+        <Route
+          index
+          element={
+            <Navigate
+              to={fallback}
+              replace
+            />
+          }
+        />
 
-      <main className="main">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">
-              RUNTIME AUTHORITY FOR AI AGENTS
-            </p>
-            <h1>Control Center</h1>
-          </div>
+        <Route
+          path="/overview"
+          element={
+            <OverviewPage
+              accessToken={
+                accessToken
+              }
+            />
+          }
+        />
 
-          <button className="primary-button">
-            + New Policy
-          </button>
-        </header>
+        {canManage && (
+          <>
+            <Route
+              path="/environments"
+              element={
+                <EnvironmentsPage
+                  accessToken={
+                    accessToken
+                  }
+                />
+              }
+            />
 
-        <section className="hero">
-          <div>
-            <p className="eyebrow">
-              PRODUCTION CONTROL
-            </p>
+            <Route
+              path="/policies"
+              element={
+                <PoliciesPage
+                  accessToken={
+                    accessToken
+                  }
+                />
+              }
+            />
 
-            <h2>
-              Give agents power.
-              <br />
-              Keep the authority.
-            </h2>
+            <Route
+              path="/agents"
+              element={
+                <AgentsPage
+                  accessToken={
+                    accessToken
+                  }
+                />
+              }
+            />
 
-            <p className="hero-copy">
-              Every consequential AI action passes
-              through deterministic policy,
-              approval and signed audit controls
-              before execution.
-            </p>
-          </div>
+            <Route
+              path="/assignments"
+              element={
+                <AssignmentsPage
+                  accessToken={
+                    accessToken
+                  }
+                />
+              }
+            />
 
-          <div className="decision-flow">
-            <span>AGENT ACTION</span>
-            <strong>→</strong>
-            <span>POLICY</span>
-            <strong>→</strong>
-            <div className="flow-results">
-              <DecisionBadge value="ALLOW" />
-              <DecisionBadge value="APPROVE" />
-              <DecisionBadge value="BLOCK" />
-            </div>
-          </div>
-        </section>
+            <Route
+              path="/api-keys"
+              element={
+                <ApiKeysPage
+                  accessToken={
+                    accessToken
+                  }
+                  activeApiKey={
+                    activeApiKey
+                  }
+                  onActiveApiKey={
+                    handleActiveApiKey
+                  }
+                />
+              }
+            />
+          </>
+        )}
 
-        <section className="stats">
-          <article>
-            <span>DECISIONS TODAY</span>
-            <strong>128</strong>
-            <small>All actions evaluated</small>
-          </article>
+        <Route
+          path="/decisions"
+          element={
+            <DecisionsPage
+              accessToken={
+                accessToken
+              }
+              apiKey={
+                activeApiKey
+              }
+            />
+          }
+        />
 
-          <article>
-            <span>PENDING APPROVALS</span>
-            <strong>3</strong>
-            <small>Human decision required</small>
-          </article>
+        <Route
+          path="/approvals"
+          element={
+            <ApprovalsPage
+              accessToken={
+                accessToken
+              }
+              user={
+                accountUser
+              }
+            />
+          }
+        />
 
-          <article>
-            <span>BLOCKED ACTIONS</span>
-            <strong>7</strong>
-            <small>Prevented before execution</small>
-          </article>
+        <Route
+          path="/audit"
+          element={
+            <AuditPage
+              accessToken={
+                accessToken
+              }
+              user={
+                accountUser
+              }
+            />
+          }
+        />
 
-          <article>
-            <span>SIGNED RECEIPTS</span>
-            <strong>128</strong>
-            <small>Tamper-evident records</small>
-          </article>
-        </section>
+        {canManage && (
+          <Route
+            path="/settings"
+            element={
+              <SettingsPage
+                user={
+                  accountUser
+                }
+                accessToken={
+                  accessToken
+                }
+                activeApiKey={
+                  activeApiKey
+                }
+                onActiveApiKey={
+                  handleActiveApiKey
+                }
+              />
+            }
+          />
+        )}
 
-        <DecisionConsole />
-
-        <article id="approval-queue" className="panel approval-panel workflow-panel">
-          <p className="eyebrow">
-            HUMAN-IN-THE-LOOP
-          </p>
-
-          <h3>
-            Approval Queue
-          </h3>
-
-          {approvals.filter(
-            (item) =>
-              item.status ===
-              "PENDING"
-          ).length === 0 ? (
-            <div className="approval-card">
-              <strong>
-                No pending approvals
-              </strong>
-
-              <p>
-                Actions requiring human authority
-                will appear here automatically.
-              </p>
-            </div>
-          ) : (
-            approvals
-              .filter(
-                (item) =>
-                  item.status ===
-                  "PENDING"
-              )
-              .map(
-                (approval) => (
-                  <div
-                    className="approval-card"
-                    key={approval.id}
-                  >
-                    <span>
-                      {approval.agentId}
-                    </span>
-
-                    <strong>
-                      {approval.action}
-                    </strong>
-
-                    {approval.referenceId && (
-                      <p className="action-context">
-                        Reference:{" "}
-                        <strong>
-                          {approval.referenceId}
-                        </strong>
-                      </p>
-                    )}
-
-                    {approval.resource && (
-                      <p className="action-context">
-                        Target:{" "}
-                        <strong>
-                          {approval.resource}
-                        </strong>
-                      </p>
-                    )}
-
-                    <p>
-                      Pending since{" "}
-                      {new Date(
-                        approval.requestedAt
-                      ).toLocaleString()}
-                    </p>
-
-                    <small className="approval-receipt">
-                      Receipt:{" "}
-                      {approval.receiptId}
-                    </small>
-
-                    <div className="approval-actions">
-                      <button
-                        className="approve"
-                        disabled={
-                          approvalBusy ===
-                          approval.id
-                        }
-                        onClick={() =>
-                          decideApproval(
-                            approval.id,
-                            "approve"
-                          )
-                        }
-                      >
-                        {approvalBusy ===
-                        approval.id
-                          ? "Working..."
-                          : "Approve"}
-                      </button>
-
-                      <button
-                        className="reject"
-                        disabled={
-                          approvalBusy ===
-                          approval.id
-                        }
-                        onClick={() =>
-                          decideApproval(
-                            approval.id,
-                            "reject"
-                          )
-                        }
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                )
-              )
-          )}
-
-          {approvalMessage && (
-            <p className="approval-message">
-              {approvalMessage}
-            </p>
-          )}
-        </article>
-
-        <article className="panel workflow-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">
-                LIVE CONTROL
-              </p>
-              <h3>Recent Decisions</h3>
-            </div>
-
-            <button className="text-button">
-              View all
-            </button>
-          </div>
-
-          <div className="decision-list">
-            {decisions.map((item) => (
-              <div
-                className="decision-row"
-                key={item.id}
-              >
-                <div>
-                  <strong>{item.action}</strong>
-                  <span>
-                    {item.agent} · {item.policy}
-                  </span>
-
-                  <small className="action-reference">
-                    Ref: {item.referenceId}
-                  </small>
-
-                  {item.resource && (
-                    <small className="action-resource">
-                      Target: {item.resource}
-                    </small>
-                  )}
-                </div>
-
-                <div className="decision-status-stack">
-                  <DecisionBadge
-                    value={item.decision}
-                  />
-
-                  {item.decision ===
-                    "APPROVE" &&
-                    item.approvalStatus && (
-                      <span
-                        className={`human-outcome human-outcome-${item.approvalStatus.toLowerCase()}`}
-                      >
-                        {item.approvalStatus}
-                      </span>
-                    )}
-
-                  {item.decidedBy && (
-                    <small className="decision-review-meta">
-                      by {item.decidedBy}
-                    </small>
-                  )}
-
-                  {item.approvalReason && (
-                    <small className="decision-review-reason">
-                      {item.approvalReason}
-                    </small>
-                  )}
-                </div>
-
-                <small>{item.time}</small>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <section className="panel policy-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">
-                SERVER-OWNED CONTROL
-              </p>
-              <h3>Active Policies</h3>
-            </div>
-
-            <span className="policy-count">
-              {policies.length} active
-            </span>
-          </div>
-
-          <div className="policy-grid">
-            {policies.map((policy) => (
-              <div
-                className="policy-card"
-                key={policy.id}
-              >
-                <strong>{policy.id}</strong>
-
-                <span>
-                  Default: {policy.defaultDecision}
-                </span>
-
-                <small>
-                  {policy.ruleCount} rule
-                  {policy.ruleCount === 1
-                    ? ""
-                    : "s"}
-                </small>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="panel trust-panel">
-          <div>
-            <p className="eyebrow">
-              VERIFIABLE CONTROL
-            </p>
-            <h3>
-              Every decision leaves proof.
-            </h3>
-
-            <p>
-              Signed decision receipts record the
-              agent, action, policy, matched rules,
-              decision and timestamp.
-            </p>
-          </div>
-
-          <code>
-            receipt_01J... verified ✓
-          </code>
-        </section>
-      </main>
-    </div>
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to={fallback}
+              replace
+            />
+          }
+        />
+      </Route>
+    </Routes>
   );
 }
-
-export default App;
