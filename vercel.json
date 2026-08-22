@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/controlpact-api/:path*",
-      "destination": "https://controlpact-api.velvetpay.app/:path*"
+      "destination": "https://controlpact-api.onrender.com/:path*"
     },
     {
       "source": "/(.*)",
