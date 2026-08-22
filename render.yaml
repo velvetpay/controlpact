@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: controlpact-api
+    runtime: node
+    plan: free
+    branch: main
+    autoDeployTrigger: off
+    buildCommand: npm ci && npm run build:api
+    startCommand: node apps/api/dist/server.js
+    domains:
+      - controlpact-api.velvetpay.app
+    envVars:
+      - key: CONTROLPACT_STORAGE
+        value: mongodb
+      - key: CONTROLPACT_MONGODB_DB
+        value: controlpact
+      - key: CONTROLPACT_PUBLIC_WEB_URL
+        value: https://controlpact.velvetpay.app
+      - key: CONTROLPACT_INVITE_FROM_EMAIL
+        value: ControlPact <welcome@velvetpay.app>
+      - key: HOST
+        value: 0.0.0.0
+      - key: CONTROLPACT_MONGODB_URI
+        sync: false
+      - key: CONTROLPACT_RECEIPT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false

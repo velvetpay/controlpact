@@ -1,0 +1,14 @@
+{
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    {
+      "source": "/controlpact-api/:path*",
+      "destination": "https://controlpact-api.velvetpay.app/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
