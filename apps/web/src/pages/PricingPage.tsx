@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import "../public-pricing.css";
 
+import "../public-back-button.css";
 const plans = [
   {
     name: "Sandbox",
@@ -133,7 +134,7 @@ export default function PricingPage() {
         </Link>
 
         <nav>
-          <Link to="/">ControlPact Home</Link>
+          <Link to="/">Product</Link>
           <Link to="/docs">Documentation</Link>
           <Link to="/licensing">Licensing</Link>
         </nav>
@@ -150,6 +151,14 @@ export default function PricingPage() {
       </header>
 
       <main>
+        <div className="cp-page-back-row">
+          <Link
+            className="cp-page-back-button"
+            to="/"
+          >
+            â† Back to ControlPact Home
+          </Link>
+        </div>
         <section className="cp-pricing-hero">
           <div className="cp-pricing-eyebrow">
             ControlPact pricing

@@ -1,0 +1,41 @@
+.cp-page-back-row {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding-top: 22px;
+}
+
+.cp-page-back-row.cp-page-back-row-narrow {
+  width: min(1000px, calc(100% - 40px));
+}
+
+.cp-page-back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #d9e1ef !important;
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.cp-page-back-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(126, 148, 255, 0.34);
+  background: rgba(82, 103, 255, 0.08);
+}
+
+@media (max-width: 620px) {
+  .cp-page-back-row,
+  .cp-page-back-row.cp-page-back-row-narrow {
+    width: min(100% - 24px, 1180px);
+  }
+}

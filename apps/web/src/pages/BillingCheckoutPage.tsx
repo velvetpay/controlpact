@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import "../billing-checkout.css";
 
+import "../public-back-button.css";
 type BillingCheckoutPageProps = {
   accessToken: string;
 };
@@ -185,18 +186,20 @@ export default function BillingCheckoutPage({
           ControlPact
         </Link>
 
-        <div className="cp-checkout-nav-actions">
-          <Link to="/">
-            ControlPact Home
-          </Link>
-
-          <Link to="/pricing">
-            Back to pricing
-          </Link>
-        </div>
+        <Link to="/pricing">
+          Back to pricing
+        </Link>
       </header>
 
       <main className="cp-checkout-shell">
+        <div className="cp-page-back-row cp-page-back-row-narrow">
+          <Link
+            className="cp-page-back-button"
+            to="/pricing"
+          >
+            â† Back to Pricing
+          </Link>
+        </div>
         <section className="cp-checkout-card">
           <div className="cp-checkout-eyebrow">
             Secure checkout

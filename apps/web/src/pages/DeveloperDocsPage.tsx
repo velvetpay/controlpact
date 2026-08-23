@@ -4,6 +4,7 @@ import {
 } from "react-router-dom";
 import "../public-docs.css";
 
+import "../public-back-button.css";
 type DocsSection =
   | "overview"
   | "quick-start"
@@ -376,7 +377,7 @@ export default function DeveloperDocsPage({
         </Link>
 
         <div className="cp-docs-top-actions">
-          <Link to="/">ControlPact Home</Link>
+          <Link to="/">Product</Link>
           <Link to="/login">Sign in</Link>
           <Link
             className="cp-docs-primary-link"
@@ -423,6 +424,14 @@ export default function DeveloperDocsPage({
         </aside>
 
         <main className="cp-docs-content">
+        <div className="cp-page-back-row">
+          <Link
+            className="cp-page-back-button"
+            to="/"
+          >
+            â† Back to ControlPact Home
+          </Link>
+        </div>
           {content}
 
           <div className="cp-docs-next">

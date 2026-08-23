@@ -3,6 +3,7 @@ import {
 } from "react-router-dom";
 import "../public-pricing.css";
 
+import "../public-back-button.css";
 export default function LicensingPage() {
   return (
     <div className="cp-pricing cp-licensing">
@@ -16,7 +17,7 @@ export default function LicensingPage() {
         </Link>
 
         <nav>
-          <Link to="/">ControlPact Home</Link>
+          <Link to="/">Product</Link>
           <Link to="/pricing">Pricing</Link>
           <Link to="/docs">Documentation</Link>
         </nav>
@@ -33,6 +34,14 @@ export default function LicensingPage() {
       </header>
 
       <main className="cp-license-shell">
+        <div className="cp-page-back-row cp-page-back-row-narrow">
+          <Link
+            className="cp-page-back-button"
+            to="/pricing"
+          >
+            â† Back to Pricing
+          </Link>
+        </div>
         <section className="cp-license-hero">
           <div className="cp-pricing-eyebrow">
             Commercial licensing

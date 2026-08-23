@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import "../enterprise-enquiry.css";
 
+import "../public-back-button.css";
 const solutionOptions = [
   "Multi-application use",
   "OEM / embedded ControlPact",
@@ -140,9 +141,6 @@ export default function EnterpriseEnquiryPage() {
         </Link>
 
         <nav>
-          <Link to="/">
-            ControlPact Home
-          </Link>
           <Link to="/pricing">
             Pricing
           </Link>
@@ -156,6 +154,14 @@ export default function EnterpriseEnquiryPage() {
       </header>
 
       <main className="cp-enterprise-shell">
+        <div className="cp-page-back-row">
+          <Link
+            className="cp-page-back-button"
+            to="/pricing"
+          >
+            â† Back to Pricing
+          </Link>
+        </div>
         <section className="cp-enterprise-copy">
           <div className="cp-enterprise-eyebrow">
             Enterprise / OEM / White-label
