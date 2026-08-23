@@ -449,6 +449,9 @@ export default function App() {
         element={
           <ControlPactLayout
             user={accountUser}
+            accessToken={
+              accessToken
+            }
             onLogout={
               handleLogout
             }

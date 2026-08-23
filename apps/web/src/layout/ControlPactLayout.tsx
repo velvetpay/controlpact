@@ -1,4 +1,8 @@
 import {
+  useEffect,
+  useState,
+} from "react";
+import {
   Link,
   NavLink,
   Outlet,
@@ -10,8 +14,15 @@ import type {
 
 type ControlPactLayoutProps = {
   user: ControlPactAccountUser;
+  accessToken: string;
   onLogout: () => void;
 };
+
+type PlatformPlan =
+  | "SANDBOX"
+  | "PRODUCTION"
+  | "BUSINESS"
+  | "ENTERPRISE";
 
 const fullFlow = [
   ["/environments", "1", "Environment"],
@@ -130,6 +141,7 @@ const operationalNext:
 
 export default function ControlPactLayout({
   user,
+  accessToken,
   onLogout,
 }: ControlPactLayoutProps) {
   const location =
@@ -155,6 +167,109 @@ export default function ControlPactLayout({
         ? managerNext
         : operationalNext
     )[location.pathname];
+
+  // CONTROLPACT_PLAN_VISIBILITY_V4
+  const [
+    platformPlan,
+    setPlatformPlan,
+  ] =
+    useState<PlatformPlan>(
+      "SANDBOX",
+    );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(
+      "/controlpact-api/v1/billing/status",
+      {
+        headers: {
+          Authorization:
+            `Bearer ${accessToken}`,
+          Accept:
+            "application/json",
+        },
+      },
+    )
+      .then(
+        async (response) => {
+          const data =
+            await response.json();
+
+          if (
+            !response.ok ||
+            !data?.success
+          ) {
+            throw new Error(
+              "Unable to load billing status.",
+            );
+          }
+
+          const candidate =
+            String(
+              data?.entitlements
+                ?.platformPlan ||
+              "SANDBOX",
+            ).toUpperCase();
+
+          if (
+            !cancelled &&
+            (
+              candidate === "SANDBOX" ||
+              candidate === "PRODUCTION" ||
+              candidate === "BUSINESS" ||
+              candidate === "ENTERPRISE"
+            )
+          ) {
+            setPlatformPlan(
+              candidate as PlatformPlan,
+            );
+          }
+        },
+      )
+      .catch(() => {
+        if (!cancelled) {
+          setPlatformPlan(
+            "SANDBOX",
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken]);
+
+  const planDisplay = {
+    SANDBOX: {
+      label: "Sandbox",
+      detail:
+        "2 users | 1 team | test only",
+      action:
+        "View plans / Upgrade",
+    },
+    PRODUCTION: {
+      label: "Production",
+      detail:
+        "10 users | 3 teams | 20 agents",
+      action:
+        "Upgrade to Business",
+    },
+    BUSINESS: {
+      label: "Business",
+      detail:
+        "30 users | 10 teams | 100 agents",
+      action:
+        "View plans",
+    },
+    ENTERPRISE: {
+      label: "Enterprise",
+      detail:
+        "100 users | 30 teams | 500 agents",
+      action:
+        "View plan",
+    },
+  }[platformPlan];
 
   const renderLink =
     (
@@ -271,6 +386,27 @@ export default function ControlPactLayout({
         </nav>
 
         <div className="cp-sidebar-bottom">
+          <div className="cp-plan-mini">
+            <span className="cp-plan-mini-eyebrow">
+              CURRENT PLAN
+            </span>
+
+            <strong>
+              {planDisplay.label}
+            </strong>
+
+            <span className="cp-plan-mini-detail">
+              {planDisplay.detail}
+            </span>
+
+            <Link
+              className="cp-plan-mini-action"
+              to="/pricing"
+            >
+              {planDisplay.action}
+            </Link>
+          </div>
+
           {canManage && (
             <NavLink
               to="/settings"
