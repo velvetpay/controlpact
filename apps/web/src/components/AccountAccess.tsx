@@ -19,10 +19,12 @@ type AccountAccessProps = {
     token: string,
     user: ControlPactAccountUser,
   ) => void;
+  initialMode?: "login" | "register";
 };
 
 export default function AccountAccess({
   onAuthenticated,
+  initialMode = "login",
 }: AccountAccessProps) {
   const inviteToken = useMemo(
     () =>
@@ -34,7 +36,7 @@ export default function AccountAccess({
 
   const [mode, setMode] =
     useState<"login" | "register">(
-      "login",
+      initialMode,
     );
 
   const [email, setEmail] =

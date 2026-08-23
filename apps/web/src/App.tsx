@@ -23,6 +23,7 @@ import DecisionsPage from "./pages/DecisionsPage";
 import ApprovalsPage from "./pages/ApprovalsPage";
 import AuditPage from "./pages/AuditPage";
 import SettingsPage from "./pages/SettingsPage";
+import PublicHomePage from "./pages/PublicHomePage";
 
 export default function App() {
   const [
@@ -192,12 +193,64 @@ export default function App() {
   }
 
   if (!accountUser) {
+    const inviteToken =
+      new URLSearchParams(
+        window.location.search,
+      ).get("invite");
+
+    if (inviteToken) {
+      return (
+        <AccountAccess
+          onAuthenticated={
+            handleAuthenticated
+          }
+        />
+      );
+    }
+
     return (
-      <AccountAccess
-        onAuthenticated={
-          handleAuthenticated
-        }
-      />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <PublicHomePage />
+          }
+        />
+
+        <Route
+          path="/login"
+          element={
+            <AccountAccess
+              initialMode="login"
+              onAuthenticated={
+                handleAuthenticated
+              }
+            />
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            <AccountAccess
+              initialMode="register"
+              onAuthenticated={
+                handleAuthenticated
+              }
+            />
+          }
+        />
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
+        />
+      </Routes>
     );
   }
 
