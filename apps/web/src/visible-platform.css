@@ -52,3 +52,64 @@
   color: #dbeafe;
   text-decoration: underline;
 }
+
+/* CONTROLPACT_PLAN_VISIBILITY_V5 */
+.cp-plan-mini {
+  width: 100%;
+  box-sizing: border-box;
+  gap: 11px;
+  margin: 2px 0 22px;
+  padding: 19px 18px 18px;
+  border-radius: 15px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(37, 99, 235, 0.16),
+      rgba(12, 22, 42, 0.74)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 10px 28px rgba(0, 0, 0, 0.14);
+}
+
+.cp-plan-mini-eyebrow {
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+}
+
+.cp-plan-mini > strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.cp-plan-mini-detail {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.cp-plan-mini-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  margin-top: 3px;
+  padding: 9px 12px;
+  border: 1px solid rgba(96, 165, 250, 0.26);
+  border-radius: 9px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #a9d2ff;
+  font-size: 11.5px;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+}
+
+.cp-plan-mini-action:hover {
+  border-color: rgba(147, 197, 253, 0.46);
+  background: rgba(37, 99, 235, 0.2);
+  color: #e2f1ff;
+  text-decoration: none;
+}
