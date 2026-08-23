@@ -7,6 +7,8 @@ import Fastify, {
   type FastifyReply,
 } from "fastify";
 
+import Stripe from "stripe";
+
 import {
   evaluatePolicy,
   type ActionRequest,
@@ -73,6 +75,9 @@ type DecisionBody = {
   request?: ActionRequest;
   policyId?: string;
   referenceId?: string;
+};
+type BillingCheckoutBody = {
+  planId?: string;
 };
 
 type ApprovalDecisionBody = {
@@ -5348,6 +5353,204 @@ export const buildApp = () => {
     },
   );
 
+  app.post<{
+    Body:
+      BillingCheckoutBody;
+  }>(
+    "/v1/billing/checkout",
+    async (
+      request,
+      reply,
+    ) => {
+      const user =
+        await resolveAuthenticatedUser(
+          request.headers
+            .authorization,
+        );
+
+      if (!user) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            message:
+              "Authentication is required.",
+          });
+      }
+
+      const planId =
+        String(
+          request.body
+            ?.planId ||
+            "",
+        ).trim();
+
+      const plan =
+        CONTROLPACT_BILLING_CATALOG
+          .find(
+            (item) =>
+              item.id ===
+              planId,
+          );
+
+      if (
+        !plan ||
+        plan.id ===
+          "sandbox" ||
+        plan.id ===
+          "enterprise" ||
+        plan.amountMinor ===
+          null
+      ) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "This ControlPact plan is not available through self-service checkout.",
+          });
+      }
+
+      const stripeSecretKey =
+        String(
+          process.env
+            .STRIPE_SECRET_KEY ||
+            "",
+        ).trim();
+
+      if (!stripeSecretKey) {
+        return reply
+          .code(503)
+          .send({
+            success: false,
+            message:
+              "ControlPact checkout is not configured yet.",
+          });
+      }
+
+      const publicWebUrl =
+        String(
+          process.env
+            .CONTROLPACT_PUBLIC_WEB_URL ||
+            "",
+        )
+          .trim()
+          .replace(
+            /\/+$/,
+            "",
+          );
+
+      if (
+        !publicWebUrl ||
+        !/^https?:\/\//i
+          .test(
+            publicWebUrl,
+          )
+      ) {
+        return reply
+          .code(503)
+          .send({
+            success: false,
+            message:
+              "ControlPact public web URL is not configured.",
+          });
+      }
+
+      const recurringInterval =
+        plan.interval ===
+          "MONTHLY"
+          ? "month"
+          : "year";
+
+      const stripe =
+        new Stripe(
+          stripeSecretKey,
+        );
+
+      const session =
+        await stripe
+          .checkout
+          .sessions
+          .create({
+            mode:
+              "subscription",
+            customer_email:
+              user.email,
+            client_reference_id:
+              user.organizationId,
+            line_items: [
+              {
+                quantity: 1,
+                price_data: {
+                  currency:
+                    "gbp",
+                  unit_amount:
+                    plan.amountMinor,
+                  recurring: {
+                    interval:
+                      recurringInterval,
+                  },
+                  product_data: {
+                    name:
+                      plan.label,
+                    description:
+                      plan.product ===
+                        "SDK"
+                        ? "ControlPact Production SDK â€” one production application."
+                        : "ControlPact hosted production governance subscription.",
+                  },
+                },
+              },
+            ],
+            metadata: {
+              organizationId:
+                user.organizationId,
+              userId:
+                user.id,
+              planId:
+                plan.id,
+              product:
+                plan.product,
+              plan:
+                plan.plan,
+            },
+            subscription_data: {
+              metadata: {
+                organizationId:
+                  user.organizationId,
+                planId:
+                  plan.id,
+                product:
+                  plan.product,
+                plan:
+                  plan.plan,
+              },
+            },
+            success_url:
+              `${publicWebUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url:
+              `${publicWebUrl}/pricing?checkout=cancelled`,
+          });
+
+      if (!session.url) {
+        return reply
+          .code(502)
+          .send({
+            success: false,
+            message:
+              "Stripe did not return a checkout URL.",
+          });
+      }
+
+      return {
+        success: true,
+        sessionId:
+          session.id,
+        url:
+          session.url,
+      };
+    },
+  );
   app.get(
     "/v1/billing/plans",
     async () => ({

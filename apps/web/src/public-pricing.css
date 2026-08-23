@@ -467,3 +467,29 @@
     gap: 8px;
   }
 }
+
+.cp-pricing-inline-choice {
+  display: inline-block;
+  margin-top: 7px;
+  color: #93a5ff !important;
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.cp-pricing-sdk-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.cp-pricing-secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  color: #c7d0df !important;
+  font-size: 0.82rem;
+  font-weight: 750;
+}

@@ -27,6 +27,7 @@ import PublicHomePage from "./pages/PublicHomePage";
 import DeveloperDocsPage from "./pages/DeveloperDocsPage";
 import PricingPage from "./pages/PricingPage";
 import LicensingPage from "./pages/LicensingPage";
+import BillingCheckoutPage, { CheckoutSuccessPage } from "./pages/BillingCheckoutPage";
 
 export default function App() {
   const [
@@ -285,6 +286,16 @@ export default function App() {
           }
         />
         <Route
+          path="/checkout/:planId"
+          element={
+            <AccountAccess
+              onAuthenticated={
+                handleAuthenticated
+              }
+            />
+          }
+        />
+        <Route
           path="/login"
           element={
             <AccountAccess
@@ -343,6 +354,24 @@ export default function App() {
           <PricingPage />
         }
       />
+      <Route
+        path="/checkout/success"
+        element={
+          <CheckoutSuccessPage />
+        }
+      />
+
+      <Route
+        path="/checkout/:planId"
+        element={
+          <BillingCheckoutPage
+            accessToken={
+              accessToken
+            }
+          />
+        }
+      />
+
 
       <Route
         path="/licensing"

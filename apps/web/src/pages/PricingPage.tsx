@@ -36,7 +36,7 @@ const plans = [
       "Official SDK included for this subscribed ControlPact account",
     ],
     action: "Start production",
-    href: "/register",
+    href: "/checkout/production-monthly",
     featured: true,
   },
   {
@@ -54,7 +54,7 @@ const plans = [
       "Priority commercial support",
     ],
     action: "Choose Business",
-    href: "/register",
+    href: "/checkout/business-monthly",
     featured: false,
   },
   {
@@ -156,6 +156,24 @@ export default function PricingPage() {
                 </div>
               )}
 
+              {plan.name === "Production Platform" && (
+                <Link
+                  className="cp-pricing-inline-choice"
+                  to="/checkout/production-annual"
+                >
+                  Choose annual billing
+                </Link>
+              )}
+
+              {plan.name === "Business Platform" && (
+                <Link
+                  className="cp-pricing-inline-choice"
+                  to="/checkout/business-annual"
+                >
+                  Choose annual billing
+                </Link>
+              )}
+
               <p>{plan.description}</p>
 
               <ul>
@@ -210,12 +228,21 @@ export default function PricingPage() {
               <li>SDK updates during the active licence term</li>
             </ul>
 
-            <Link
-              className="cp-pricing-card-action"
-              to="/licensing"
-            >
-              View SDK licensing
-            </Link>
+            <div className="cp-pricing-sdk-actions">
+              <Link
+                className="cp-pricing-card-action"
+                to="/checkout/sdk-annual"
+              >
+                Buy annual SDK licence
+              </Link>
+
+              <Link
+                className="cp-pricing-secondary-action"
+                to="/licensing"
+              >
+                View SDK licensing
+              </Link>
+            </div>
           </div>
         </section>
 

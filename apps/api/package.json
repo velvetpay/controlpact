@@ -14,7 +14,8 @@
         "@controlpact/policy-registry": "0.1.0",
         "@controlpact/receipts": "0.1.0",
         "fastify": "^5.0.0",
-        "mongodb": "^7.5.0"
+        "mongodb": "^7.5.0",
+        "stripe": "^22.5.0"
     },
     "devDependencies": {
         "@types/node": "^24.0.0",
