@@ -33,6 +33,48 @@
   background: rgba(82, 103, 255, 0.08);
 }
 
+.cp-page-back-row-docs {
+  padding-top: 30px;
+  margin-bottom: 46px;
+}
+
+.cp-page-back-button-docs {
+  min-height: 50px;
+  gap: 10px;
+  padding: 0 20px;
+  border-color: rgba(126, 148, 255, 0.28);
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(82, 103, 255, 0.11),
+    rgba(255, 255, 255, 0.035)
+  );
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  font-size: 0.88rem;
+  letter-spacing: 0.01em;
+}
+
+.cp-page-back-button-docs:hover {
+  border-color: rgba(126, 148, 255, 0.46);
+  background: linear-gradient(
+    180deg,
+    rgba(82, 103, 255, 0.16),
+    rgba(255, 255, 255, 0.05)
+  );
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cp-page-back-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  line-height: 1;
+}
 @media (max-width: 620px) {
   .cp-page-back-row,
   .cp-page-back-row.cp-page-back-row-narrow {

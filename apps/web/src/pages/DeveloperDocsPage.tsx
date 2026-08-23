@@ -424,12 +424,18 @@ export default function DeveloperDocsPage({
         </aside>
 
         <main className="cp-docs-content">
-        <div className="cp-page-back-row">
+        <div className="cp-page-back-row cp-page-back-row-docs">
           <Link
-            className="cp-page-back-button"
+            className="cp-page-back-button cp-page-back-button-docs"
             to="/"
           >
-            â† Back to ControlPact Home
+            <span
+              aria-hidden="true"
+              className="cp-page-back-arrow"
+            >
+              {"\u2190"}
+            </span>
+            <span>Back to ControlPact Home</span>
           </Link>
         </div>
           {content}
