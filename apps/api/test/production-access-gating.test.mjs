@@ -25,7 +25,7 @@ const authHeaders = (
 });
 
 test(
-  "sandbox organisation cannot create a production execution key",
+  "sandbox organisation is blocked at the first production environment attempt",
   async () => {
     const app =
       buildApp();
@@ -37,11 +37,11 @@ test(
           "/v1/auth/register",
         payload: {
           email:
-            "sandbox-gating-owner@controlpact.test",
+            "sandbox-production-wall@controlpact.test",
           password:
-            "ControlPact-Gating-2026!",
+            "ControlPact-Production-Wall-2026!",
           organizationName:
-            "Sandbox Gating Organisation",
+            "Sandbox Production Wall",
         },
       });
 
@@ -53,7 +53,7 @@ test(
     const session =
       registration.json();
 
-    const environmentResponse =
+    const response =
       await app.inject({
         method: "POST",
         url:
@@ -64,7 +64,7 @@ test(
           ),
         payload: {
           name:
-            "Production Deployment",
+            "Blocked Production",
           category:
             "SOFTWARE_DEVOPS",
           mode:
@@ -73,182 +73,33 @@ test(
       });
 
     assert.equal(
-      environmentResponse.statusCode,
-      201,
-    );
-
-    const environment =
-      environmentResponse
-        .json()
-        .environment;
-
-    const activateEnvironment =
-      await app.inject({
-        method: "PATCH",
-        url:
-          `/v1/environments/${environment.id}`,
-        headers:
-          authHeaders(
-            session.accessToken,
-          ),
-        payload: {
-          status:
-            "ACTIVE",
-        },
-      });
-
-    assert.equal(
-      activateEnvironment.statusCode,
-      200,
-    );
-
-    const policyResponse =
-      await app.inject({
-        method: "POST",
-        url:
-          "/v1/organization-policies/from-template",
-        headers:
-          authHeaders(
-            session.accessToken,
-          ),
-        payload: {
-          templateId:
-            "software-devops",
-          environmentId:
-            environment.id,
-          name:
-            "Production Release Policy",
-        },
-      });
-
-    assert.equal(
-      policyResponse.statusCode,
-      201,
-    );
-
-    const policy =
-      policyResponse
-        .json()
-        .policy;
-
-    const publishResponse =
-      await app.inject({
-        method: "POST",
-        url:
-          `/v1/organization-policies/${policy.id}/publish`,
-        headers:
-          authHeaders(
-            session.accessToken,
-          ),
-      });
-
-    assert.equal(
-      publishResponse.statusCode,
-      200,
-    );
-
-    const agentResponse =
-      await app.inject({
-        method: "POST",
-        url:
-          "/v1/agents",
-        headers:
-          authHeaders(
-            session.accessToken,
-          ),
-        payload: {
-          environmentId:
-            environment.id,
-          name:
-            "Production Deployment Agent",
-          externalAgentId:
-            "production-deployment-agent",
-        },
-      });
-
-    assert.equal(
-      agentResponse.statusCode,
-      201,
-    );
-
-    const agent =
-      agentResponse
-        .json()
-        .agent;
-
-    const assignmentResponse =
-      await app.inject({
-        method: "POST",
-        url:
-          "/v1/agent-assignments",
-        headers:
-          authHeaders(
-            session.accessToken,
-          ),
-        payload: {
-          environmentId:
-            environment.id,
-          agentId:
-            agent.id,
-          policyId:
-            policy.id,
-          responsibleRole:
-            "OWNER",
-        },
-      });
-
-    assert.equal(
-      assignmentResponse.statusCode,
-      201,
-    );
-
-    const keyResponse =
-      await app.inject({
-        method: "POST",
-        url:
-          "/v1/api-keys",
-        headers:
-          authHeaders(
-            session.accessToken,
-          ),
-        payload: {
-          name:
-            "Blocked Production Key",
-          environmentId:
-            environment.id,
-          agentId:
-            agent.id,
-          policyId:
-            policy.id,
-          scopes: [
-            "decisions:execute",
-          ],
-        },
-      });
-
-    assert.equal(
-      keyResponse.statusCode,
+      response.statusCode,
       402,
     );
 
-    const blockedKeyBody =
-      keyResponse.json();
+    const body =
+      response.json();
 
     assert.equal(
-      blockedKeyBody.code,
+      body.code,
       "PRODUCTION_ENTITLEMENT_REQUIRED",
     );
 
-    assert.match(
-      blockedKeyBody.message,
-      /entitlement is required/i,
+    assert.equal(
+      body.upgradeUrl,
+      "/pricing",
     );
 
-    const billingStatus =
+    assert.match(
+      body.message,
+      /upgrade/i,
+    );
+
+    const environments =
       await app.inject({
         method: "GET",
         url:
-          "/v1/billing/status",
+          "/v1/environments",
         headers:
           authHeaders(
             session.accessToken,
@@ -256,25 +107,16 @@ test(
       });
 
     assert.equal(
-      billingStatus.statusCode,
+      environments.statusCode,
       200,
     );
 
-    const billing =
-      billingStatus.json();
-
     assert.equal(
-      billing
-        .entitlements
-        .productionPlatformAccess,
-      false,
-    );
-
-    assert.equal(
-      billing
-        .entitlements
-        .standaloneProductionSdkAccess,
-      false,
+      environments
+        .json()
+        .environments
+        .length,
+      0,
     );
 
     await app.close();

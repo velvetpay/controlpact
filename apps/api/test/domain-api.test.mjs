@@ -86,11 +86,11 @@ test(
           ),
         payload: {
           name:
-            "Production Deployment",
+            "Test Deployment",
           category:
             "SOFTWARE_DEVOPS",
           mode:
-            "PRODUCTION",
+            "TEST",
         },
       });
 
@@ -120,7 +120,7 @@ test(
           environmentId:
             environment.id,
           name:
-            "Production Release Policy",
+            "Test Release Policy",
         },
       });
 

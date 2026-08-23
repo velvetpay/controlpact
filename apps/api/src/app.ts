@@ -57,6 +57,7 @@ import {
 
 import {
   CONTROLPACT_BILLING_CATALOG,
+  CONTROLPACT_PLAN_LIMITS,
   buildControlPactEntitlements,
   createControlPactBillingStorage,
   mapStripeSubscriptionStatus,
@@ -212,6 +213,49 @@ export const buildApp = () => {
           .standaloneProductionSdkAccess
       );
     };
+
+  // CONTROLPACT_FINAL_PLAN_ENFORCEMENT_V1
+  const getOrganizationPlanContext =
+    async (
+      organizationId: string,
+    ) => {
+      const entitlements =
+        await getOrganizationBillingEntitlements(
+          organizationId,
+        );
+
+      const plan =
+        entitlements.platformPlan ===
+          "SANDBOX" &&
+        entitlements
+          .standaloneProductionSdkAccess
+          ? "PRODUCTION"
+          : entitlements
+              .platformPlan;
+
+      return {
+        entitlements,
+        plan,
+        limits:
+          CONTROLPACT_PLAN_LIMITS[
+            plan
+          ],
+      };
+    };
+
+  const hasPlanProductionAccess =
+    (
+      entitlements:
+        Awaited<
+          ReturnType<
+            typeof getOrganizationBillingEntitlements
+          >
+        >,
+    ) =>
+      entitlements
+        .productionPlatformAccess ||
+      entitlements
+        .standaloneProductionSdkAccess;
 
   const reviewStorage =
     createReviewWorkflowStorage();
@@ -1794,6 +1838,83 @@ export const buildApp = () => {
           });
       }
 
+      const planContextForEnvironment =
+        await getOrganizationPlanContext(
+          user.organizationId,
+        );
+
+      if (
+        mode ===
+          "PRODUCTION" &&
+        !hasPlanProductionAccess(
+          planContextForEnvironment
+            .entitlements,
+        )
+      ) {
+        return reply
+          .code(402)
+          .send({
+            success: false,
+            code:
+              "PRODUCTION_ENTITLEMENT_REQUIRED",
+            upgradeUrl:
+              "/pricing",
+            message:
+              "Production is locked on Sandbox. Upgrade to Production Platform, Business Platform or Enterprise to create a production environment.",
+          });
+      }
+
+      const existingEnvironmentsForPlan =
+        await domainStorage
+          .listEnvironments(
+            user.organizationId,
+          );
+
+      const environmentLimit =
+        mode ===
+          "PRODUCTION"
+          ? planContextForEnvironment
+              .limits
+              .productionEnvironments
+          : planContextForEnvironment
+              .limits
+              .testEnvironments;
+
+      const environmentCount =
+        existingEnvironmentsForPlan
+          .filter(
+            (item) =>
+              item.mode === mode,
+          )
+          .length;
+
+      if (
+        environmentCount >=
+          environmentLimit
+      ) {
+        return reply
+          .code(402)
+          .send({
+            success: false,
+            code:
+              "PLAN_LIMIT_REACHED",
+            plan:
+              planContextForEnvironment
+                .plan,
+            resource:
+              mode ===
+                "PRODUCTION"
+                ? "productionEnvironments"
+                : "testEnvironments",
+            limit:
+              environmentLimit,
+            upgradeUrl:
+              "/pricing",
+            message:
+              `${planContextForEnvironment.plan} plan limit reached for ${mode.toLowerCase()} environments. View Pricing to increase capacity.`,
+          });
+      }
+
       const now =
         new Date()
           .toISOString();
@@ -1897,6 +2018,37 @@ export const buildApp = () => {
             message:
               "Environment was not found.",
           });
+      }
+
+      if (
+        environment.mode ===
+          "PRODUCTION" &&
+        request.body?.status ===
+          "ACTIVE"
+      ) {
+        const planContextForActivation =
+          await getOrganizationPlanContext(
+            user.organizationId,
+          );
+
+        if (
+          !hasPlanProductionAccess(
+            planContextForActivation
+              .entitlements,
+          )
+        ) {
+          return reply
+            .code(402)
+            .send({
+              success: false,
+              code:
+                "PRODUCTION_ENTITLEMENT_REQUIRED",
+              upgradeUrl:
+                "/pricing",
+              message:
+                "Production activation is locked on Sandbox. Upgrade your ControlPact plan to continue.",
+            });
+        }
       }
 
       const next = {
@@ -2084,6 +2236,65 @@ export const buildApp = () => {
             success: false,
             message:
               "An agent with this externalAgentId already exists.",
+          });
+      }
+
+      const planContextForAgent =
+        await getOrganizationPlanContext(
+          user.organizationId,
+        );
+
+      if (
+        environment.mode ===
+          "PRODUCTION" &&
+        !hasPlanProductionAccess(
+          planContextForAgent
+            .entitlements,
+        )
+      ) {
+        return reply
+          .code(402)
+          .send({
+            success: false,
+            code:
+              "PRODUCTION_ENTITLEMENT_REQUIRED",
+            upgradeUrl:
+              "/pricing",
+            message:
+              "Production agents are locked on Sandbox. Upgrade your ControlPact plan to continue.",
+          });
+      }
+
+      const countedAgents =
+        existing.filter(
+          (item) =>
+            item.status !==
+              "REVOKED",
+        );
+
+      if (
+        countedAgents.length >=
+          planContextForAgent
+            .limits.agents
+      ) {
+        return reply
+          .code(402)
+          .send({
+            success: false,
+            code:
+              "PLAN_LIMIT_REACHED",
+            plan:
+              planContextForAgent
+                .plan,
+            resource:
+              "agents",
+            limit:
+              planContextForAgent
+                .limits.agents,
+            upgradeUrl:
+              "/pricing",
+            message:
+              `${planContextForAgent.plan} plan agent limit reached. View Pricing to increase capacity.`,
           });
       }
 
@@ -2363,6 +2574,46 @@ export const buildApp = () => {
             message:
               "Organisation policy was not found.",
           });
+      }
+
+      if (
+        policy.environmentId
+      ) {
+        const policyEnvironment =
+          await domainStorage
+            .getEnvironment(
+              policy.environmentId,
+            );
+
+        if (
+          policyEnvironment
+            ?.mode ===
+              "PRODUCTION"
+        ) {
+          const planContextForPolicy =
+            await getOrganizationPlanContext(
+              user.organizationId,
+            );
+
+          if (
+            !hasPlanProductionAccess(
+              planContextForPolicy
+                .entitlements,
+            )
+          ) {
+            return reply
+              .code(402)
+              .send({
+                success: false,
+                code:
+                  "PRODUCTION_ENTITLEMENT_REQUIRED",
+                upgradeUrl:
+                  "/pricing",
+                message:
+                  "Publishing a production policy is locked on Sandbox. Upgrade your ControlPact plan to continue.",
+              });
+          }
+        }
       }
 
       const now =
@@ -3020,6 +3271,88 @@ export const buildApp = () => {
           TEAM_INVITE_TTL_MS,
         ).toISOString();
 
+      const planContextForMember =
+        await getOrganizationPlanContext(
+          user.organizationId,
+        );
+
+      const countedMembers =
+        existing.filter(
+          (item) =>
+            item.status !==
+              "DISABLED",
+        );
+
+      const currentHumanUsers =
+        Math.max(
+          1,
+          countedMembers.length,
+        );
+
+      if (
+        currentHumanUsers >=
+          planContextForMember
+            .limits.humanUsers
+      ) {
+        return reply
+          .code(402)
+          .send({
+            success: false,
+            code:
+              "PLAN_LIMIT_REACHED",
+            plan:
+              planContextForMember
+                .plan,
+            resource:
+              "humanUsers",
+            limit:
+              planContextForMember
+                .limits.humanUsers,
+            upgradeUrl:
+              "/pricing",
+            message:
+              `${planContextForMember.plan} plan user/team-member seat limit reached. View Pricing to add more people.`,
+          });
+      }
+
+      if (
+        role ===
+          "APPROVER"
+      ) {
+        const currentApprovers =
+          countedMembers.filter(
+            (item) =>
+              item.role ===
+                "APPROVER",
+          ).length;
+
+        if (
+          currentApprovers >=
+            planContextForMember
+              .limits.approvers
+        ) {
+          return reply
+            .code(402)
+            .send({
+              success: false,
+              code:
+                "PLAN_LIMIT_REACHED",
+              plan:
+                planContextForMember
+                  .plan,
+              resource:
+                "approvers",
+              limit:
+                planContextForMember
+                  .limits.approvers,
+              upgradeUrl:
+                "/pricing",
+              message:
+                `${planContextForMember.plan} plan Approver limit reached. View Pricing to increase approval capacity.`,
+            });
+        }
+      }
+
       const now =
         new Date()
           .toISOString();
@@ -3318,6 +3651,65 @@ export const buildApp = () => {
             success: false,
             message:
               "Invalid responsible role.",
+          });
+      }
+
+      const planContextForAssignment =
+        await getOrganizationPlanContext(
+          user.organizationId,
+        );
+
+      if (
+        environment.mode ===
+          "PRODUCTION" &&
+        !hasPlanProductionAccess(
+          planContextForAssignment
+            .entitlements,
+        )
+      ) {
+        return reply
+          .code(402)
+          .send({
+            success: false,
+            code:
+              "PRODUCTION_ENTITLEMENT_REQUIRED",
+            upgradeUrl:
+              "/pricing",
+            message:
+              "Production assignments are locked on Sandbox. Upgrade your ControlPact plan to continue.",
+          });
+      }
+
+      const existingAssignmentsForPlan =
+        await domainStorage
+          .listAssignments(
+            user.organizationId,
+          );
+
+      if (
+        existingAssignmentsForPlan
+          .length >=
+        planContextForAssignment
+          .limits.assignments
+      ) {
+        return reply
+          .code(402)
+          .send({
+            success: false,
+            code:
+              "PLAN_LIMIT_REACHED",
+            plan:
+              planContextForAssignment
+                .plan,
+            resource:
+              "assignments",
+            limit:
+              planContextForAssignment
+                .limits.assignments,
+            upgradeUrl:
+              "/pricing",
+            message:
+              `${planContextForAssignment.plan} plan assignment limit reached. View Pricing to increase capacity.`,
           });
       }
 
@@ -3649,6 +4041,51 @@ export const buildApp = () => {
             : [
                 "decisions:execute",
               ];
+      }
+
+      const planContextForApiKey =
+        await getOrganizationPlanContext(
+          user.organizationId,
+        );
+
+      const existingApiKeysForPlan =
+        await storage
+          .listApiKeysByOrganization(
+            user.organizationId,
+          );
+
+      const activeApiKeyCount =
+        existingApiKeysForPlan
+          .filter(
+            (item) =>
+              !item.revokedAt,
+          )
+          .length;
+
+      if (
+        activeApiKeyCount >=
+          planContextForApiKey
+            .limits.apiKeys
+      ) {
+        return reply
+          .code(402)
+          .send({
+            success: false,
+            code:
+              "PLAN_LIMIT_REACHED",
+            plan:
+              planContextForApiKey
+                .plan,
+            resource:
+              "apiKeys",
+            limit:
+              planContextForApiKey
+                .limits.apiKeys,
+            upgradeUrl:
+              "/pricing",
+            message:
+              `${planContextForApiKey.plan} plan API-key limit reached. Revoke an unused key or View Pricing to increase capacity.`,
+          });
       }
 
       const secret =
@@ -4944,6 +5381,66 @@ export const buildApp = () => {
             existing,
             true,
           );
+        }
+      }
+
+      if (
+        authenticatedApiKey
+      ) {
+        const planContextForDecision =
+          await getOrganizationPlanContext(
+            authenticatedApiKey
+              .organizationId,
+          );
+
+        const quotaNow =
+          new Date();
+
+        const monthStart =
+          new Date(
+            Date.UTC(
+              quotaNow
+                .getUTCFullYear(),
+              quotaNow
+                .getUTCMonth(),
+              1,
+            ),
+          ).toISOString();
+
+        const decisionsThisMonth =
+          await storage
+            .countDecisionsByOrganizationSince(
+              authenticatedApiKey
+                .organizationId,
+              monthStart,
+            );
+
+        if (
+          decisionsThisMonth >=
+            planContextForDecision
+              .limits
+              .monthlyDecisions
+        ) {
+          return reply
+            .code(402)
+            .send({
+              success: false,
+              code:
+                "PLAN_LIMIT_REACHED",
+              plan:
+                planContextForDecision
+                  .plan,
+              resource:
+                "monthlyDecisions",
+              limit:
+                planContextForDecision
+                  .limits
+                  .monthlyDecisions,
+              upgradeUrl:
+                "/pricing",
+              message:
+                `${planContextForDecision.plan} monthly governed-decision limit reached. View Pricing to increase capacity.`,
+            });
         }
       }
 

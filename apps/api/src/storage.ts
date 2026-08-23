@@ -133,6 +133,11 @@ export interface ControlPactStorage {
     StoredDecisionRecord | undefined
   >;
 
+  countDecisionsByOrganizationSince(
+    organizationId: string,
+    createdAtGte: string,
+  ): Promise<number>;
+
   saveDecision(
     decision: StoredDecisionRecord,
   ): Promise<void>;
@@ -379,6 +384,21 @@ implements ControlPactStorage {
     return decision
       ? cloneDecision(decision)
       : undefined;
+  }
+
+  async countDecisionsByOrganizationSince(
+    organizationId: string,
+    createdAtGte: string,
+  ): Promise<number> {
+    return this.decisions
+      .filter(
+        (item) =>
+          item.organizationId ===
+            organizationId &&
+          item.createdAt >=
+            createdAtGte,
+      )
+      .length;
   }
 
   async saveDecision(
@@ -1018,6 +1038,23 @@ implements ControlPactStorage {
             StoredDecisionRecord
         )
       : undefined;
+  }
+
+  async countDecisionsByOrganizationSince(
+    organizationId: string,
+    createdAtGte: string,
+  ): Promise<number> {
+    const collection =
+      await this.decisions();
+
+    return collection
+      .countDocuments({
+        organizationId,
+        createdAt: {
+          $gte:
+            createdAtGte,
+        },
+      });
   }
 
   async saveDecision(

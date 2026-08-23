@@ -16,8 +16,7 @@ const plans = [
     description:
       "Explore ControlPact in a controlled test environment. Production execution is locked until you upgrade.",
     features: [
-      "2 human users",
-      "1 team",
+      "2 human users / team members",
       "1 test environment",
       "3 registered AI agents",
       "5 active assignments",
@@ -40,8 +39,7 @@ const plans = [
     description:
       "For organisations putting governed AI agents into real production.",
     features: [
-      "10 human users",
-      "3 teams",
+      "10 human users / team members",
       "5 test environments",
       "2 production environments",
       "20 registered AI agents",
@@ -65,8 +63,7 @@ const plans = [
     description:
       "For larger multi-team organisations operating substantially more governed AI activity.",
     features: [
-      "30 human users",
-      "10 teams",
+      "30 human users / team members",
       "20 test environments",
       "10 production environments",
       "100 registered AI agents",
@@ -90,8 +87,7 @@ const plans = [
     description:
       "For large organisations requiring higher governed capacity, identity integration and contractual support.",
     features: [
-      "100 human users",
-      "30 teams",
+      "100 human users / team members",
       "50 test environments",
       "30 production environments",
       "500 registered AI agents",

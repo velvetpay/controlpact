@@ -244,28 +244,28 @@ export default function ControlPactLayout({
     SANDBOX: {
       label: "Sandbox",
       detail:
-        "2 users | 1 team | test only",
+        "2 user seats | test only",
       action:
         "View plans / Upgrade",
     },
     PRODUCTION: {
       label: "Production",
       detail:
-        "10 users | 3 teams | 20 agents",
+        "10 user seats | 20 agents",
       action:
         "Upgrade to Business",
     },
     BUSINESS: {
       label: "Business",
       detail:
-        "30 users | 10 teams | 100 agents",
+        "30 user seats | 100 agents",
       action:
         "View plans",
     },
     ENTERPRISE: {
       label: "Enterprise",
       detail:
-        "100 users | 30 teams | 500 agents",
+        "100 user seats | 500 agents",
       action:
         "View plan",
     },

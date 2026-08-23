@@ -97,6 +97,75 @@ export type ControlPactBillingEntitlements = {
   standaloneSdkApplicationLimit: number;
 };
 
+export type ControlPactPlatformPlan =
+  | "SANDBOX"
+  | "PRODUCTION"
+  | "BUSINESS"
+  | "ENTERPRISE";
+
+export type ControlPactPlanLimits = {
+  humanUsers: number;
+  testEnvironments: number;
+  productionEnvironments: number;
+  agents: number;
+  assignments: number;
+  apiKeys: number;
+  monthlyDecisions: number;
+  approvers: number;
+  auditRetentionDays: number;
+};
+
+export const CONTROLPACT_PLAN_LIMITS:
+  Record<
+    ControlPactPlatformPlan,
+    ControlPactPlanLimits
+  > = {
+    SANDBOX: {
+      humanUsers: 2,
+      testEnvironments: 1,
+      productionEnvironments: 0,
+      agents: 3,
+      assignments: 5,
+      apiKeys: 2,
+      monthlyDecisions: 1000,
+      approvers: 1,
+      auditRetentionDays: 30,
+    },
+    PRODUCTION: {
+      humanUsers: 10,
+      testEnvironments: 5,
+      productionEnvironments: 2,
+      agents: 20,
+      assignments: 50,
+      apiKeys: 10,
+      monthlyDecisions: 25000,
+      approvers: 5,
+      auditRetentionDays: 365,
+    },
+    BUSINESS: {
+      humanUsers: 30,
+      testEnvironments: 20,
+      productionEnvironments: 10,
+      agents: 100,
+      assignments: 250,
+      apiKeys: 50,
+      monthlyDecisions: 150000,
+      approvers: 20,
+      auditRetentionDays: 1095,
+    },
+    ENTERPRISE: {
+      humanUsers: 100,
+      testEnvironments: 50,
+      productionEnvironments: 30,
+      agents: 500,
+      assignments: 1000,
+      apiKeys: 200,
+      monthlyDecisions: 1000000,
+      approvers: 75,
+      auditRetentionDays: 2555,
+    },
+  };
+
 export type BillingPlanCatalogItem = {
   id:
     | "sandbox"
