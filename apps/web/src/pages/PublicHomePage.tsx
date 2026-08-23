@@ -52,6 +52,7 @@ export default function PublicHomePage() {
           <a href="#authority">Authority</a>
           <a href="#sdk">SDK</a>
           <Link to="/docs">Documentation</Link>
+          <Link to="/pricing">Pricing</Link>
         </nav>
 
         <div className="cp-public-actions">
@@ -275,12 +276,21 @@ export default function PublicHomePage() {
               Commercial licensing and checkout are the next product stage.
             </div>
 
-            <Link
-              className="cp-public-button cp-public-button-outline"
-              to="/docs"
-            >
-              Read developer docs
-            </Link>
+            <div className="cp-public-actions">
+              <Link
+                className="cp-public-button cp-public-button-outline"
+                to="/docs"
+              >
+                Read developer docs
+              </Link>
+
+              <Link
+                className="cp-public-button cp-public-button-primary"
+                to="/pricing"
+              >
+                View pricing
+              </Link>
+            </div>
           </div>
         </section>
 

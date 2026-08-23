@@ -25,6 +25,8 @@ import AuditPage from "./pages/AuditPage";
 import SettingsPage from "./pages/SettingsPage";
 import PublicHomePage from "./pages/PublicHomePage";
 import DeveloperDocsPage from "./pages/DeveloperDocsPage";
+import PricingPage from "./pages/PricingPage";
+import LicensingPage from "./pages/LicensingPage";
 
 export default function App() {
   const [
@@ -270,6 +272,19 @@ export default function App() {
           }
         />
         <Route
+          path="/pricing"
+          element={
+            <PricingPage />
+          }
+        />
+
+        <Route
+          path="/licensing"
+          element={
+            <LicensingPage />
+          }
+        />
+        <Route
           path="/login"
           element={
             <AccountAccess
@@ -322,6 +337,20 @@ export default function App() {
 
   return (
     <Routes>
+      <Route
+        path="/pricing"
+        element={
+          <PricingPage />
+        }
+      />
+
+      <Route
+        path="/licensing"
+        element={
+          <LicensingPage />
+        }
+      />
+
       <Route
         path="/docs"
         element={
