@@ -1,5 +1,10 @@
 import {
+  useEffect,
+} from "react";
+
+import {
   Link,
+  useLocation,
 } from "react-router-dom";
 import "../public-pricing.css";
 
@@ -77,6 +82,45 @@ const plans = [
 ];
 
 export default function PricingPage() {
+  const location =
+    useLocation();
+
+  useEffect(
+    () => {
+      if (
+        location.hash !==
+          "#sdk"
+      ) {
+        return;
+      }
+
+      const timer =
+        window.setTimeout(
+          () => {
+            document
+              .getElementById(
+                "sdk",
+              )
+              ?.scrollIntoView({
+                behavior:
+                  "smooth",
+                block:
+                  "start",
+              });
+          },
+          0,
+        );
+
+      return () =>
+        window.clearTimeout(
+          timer,
+        );
+    },
+    [
+      location.hash,
+    ],
+  );
+
   return (
     <div className="cp-pricing">
       <header className="cp-pricing-nav">
@@ -203,7 +247,10 @@ export default function PricingPage() {
           ))}
         </section>
 
-        <section className="cp-pricing-sdk">
+        <section
+          className="cp-pricing-sdk"
+          id="sdk"
+        >
           <div>
             <div className="cp-pricing-eyebrow">
               ControlPact Production SDK

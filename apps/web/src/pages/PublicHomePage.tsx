@@ -278,15 +278,15 @@ export default function PublicHomePage() {
 
             <div className="cp-public-actions">
               <Link
-                className="cp-public-button cp-public-button-outline"
+                className="cp-public-button cp-public-button-outline cp-public-sdk-cta"
                 to="/docs"
               >
                 Read developer docs
               </Link>
 
               <Link
-                className="cp-public-button cp-public-button-primary"
-                to="/pricing"
+                className="cp-public-button cp-public-button-primary cp-public-sdk-cta cp-public-sdk-cta-primary"
+                to="/pricing#sdk"
               >
                 View pricing
               </Link>

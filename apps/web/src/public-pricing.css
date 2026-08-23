@@ -493,3 +493,8 @@
   font-size: 0.82rem;
   font-weight: 750;
 }
+
+/* Offset the SDK pricing anchor below the sticky navigation. */
+#sdk.cp-pricing-sdk {
+  scroll-margin-top: 112px;
+}
