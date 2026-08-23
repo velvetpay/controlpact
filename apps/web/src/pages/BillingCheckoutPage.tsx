@@ -25,7 +25,7 @@ const planLabels:
       title:
         "Production Platform",
       price:
-        "Â£149/month",
+        "£149/month",
       detail:
         "Hosted production governance with SDK access for this subscribed ControlPact account.",
     },
@@ -33,7 +33,7 @@ const planLabels:
       title:
         "Production Platform",
       price:
-        "Â£1,490/year",
+        "£1,490/year",
       detail:
         "Annual hosted production governance with SDK access for this subscribed ControlPact account.",
     },
@@ -41,7 +41,7 @@ const planLabels:
       title:
         "Business Platform",
       price:
-        "Â£399/month",
+        "£399/month",
       detail:
         "Expanded hosted governance for larger teams and operational usage.",
     },
@@ -49,7 +49,7 @@ const planLabels:
       title:
         "Business Platform",
       price:
-        "Â£3,990/year",
+        "£3,990/year",
       detail:
         "Annual Business Platform subscription for larger teams and operational usage.",
     },
@@ -57,7 +57,7 @@ const planLabels:
       title:
         "Production SDK",
       price:
-        "Â£1,495/year",
+        "£1,495/year",
       detail:
         "One production application under the standalone commercial SDK licence.",
     },

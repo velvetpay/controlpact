@@ -23,9 +23,9 @@ const plans = [
   },
   {
     name: "Production Platform",
-    price: "Â£149",
+    price: "£149",
     cadence: "per month",
-    annual: "or Â£1,490/year",
+    annual: "or £1,490/year",
     description:
       "For organisations running real AI agents through the hosted ControlPact platform.",
     features: [
@@ -41,9 +41,9 @@ const plans = [
   },
   {
     name: "Business Platform",
-    price: "Â£399",
+    price: "£399",
     cadence: "per month",
-    annual: "or Â£3,990/year",
+    annual: "or £3,990/year",
     description:
       "For larger teams operating more governed agents, approvals and audit activity.",
     features: [
@@ -209,7 +209,7 @@ export default function PricingPage() {
               ControlPact Production SDK
             </div>
             <h2>
-              Â£1,495/year per production application
+              £1,495/year per production application
             </h2>
             <p>
               For a customer-owned application integrating ControlPact
@@ -252,7 +252,7 @@ export default function PricingPage() {
             Organisations already paying for a Production Platform or
             Business Platform subscription may use the official SDK to
             connect their own systems to that subscribed ControlPact
-            account. A separate Â£1,495 SDK licence is for standalone
+            account. A separate £1,495 SDK licence is for standalone
             commercial application integration outside that included
             platform use.
           </p>
@@ -287,7 +287,7 @@ export default function PricingPage() {
 
       <footer className="cp-pricing-footer">
         <span>
-          ControlPact â€” a Velvet Technologies product.
+          ControlPact — a Velvet Technologies product.
         </span>
         <div>
           <Link to="/docs">Documentation</Link>

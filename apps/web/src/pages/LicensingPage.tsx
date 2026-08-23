@@ -74,7 +74,7 @@ export default function LicensingPage() {
             <span>03</span>
             <h2>Production SDK</h2>
             <p>
-              Â£1,495/year covers one customer-owned production
+              £1,495/year covers one customer-owned production
               application using the ControlPact SDK under a dedicated
               commercial integration licence.
             </p>
@@ -92,7 +92,7 @@ export default function LicensingPage() {
         </section>
 
         <section className="cp-license-terms">
-          <h2>Production SDK licence â€” core rights</h2>
+          <h2>Production SDK licence — core rights</h2>
 
           <div className="cp-license-term-list">
             <div>
@@ -162,7 +162,7 @@ export default function LicensingPage() {
 
       <footer className="cp-pricing-footer">
         <span>
-          ControlPact â€” a Velvet Technologies product.
+          ControlPact — a Velvet Technologies product.
         </span>
         <div>
           <Link to="/pricing">Pricing</Link>
