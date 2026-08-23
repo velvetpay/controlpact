@@ -151,12 +151,12 @@ export default function LicensingPage() {
             </h2>
           </div>
 
-          <a
+          <Link
             className="cp-pricing-primary cp-pricing-large"
-            href="mailto:partnerships@velvetpay.app?subject=ControlPact%20Licensing%20Enquiry"
+            to="/enterprise"
           >
             Contact Sales
-          </a>
+          </Link>
         </section>
       </main>
 

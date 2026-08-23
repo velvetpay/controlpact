@@ -6025,5 +6025,282 @@ export const buildApp = () => {
         .close();
     },
   );
+  app.post<{
+    Body: {
+      name?: string;
+      email?: string;
+      company?: string;
+      website?: string;
+      role?: string;
+      requirements?: string;
+      solutions?: string[];
+      companyUrl?: string;
+    };
+  }>(
+    "/v1/enterprise-enquiries",
+    async (
+      request,
+      reply,
+    ) => {
+      const name =
+        String(
+          request.body?.name ||
+          "",
+        ).trim();
+
+      const email =
+        normalizeEmail(
+          String(
+            request.body?.email ||
+            "",
+          ),
+        );
+
+      const company =
+        String(
+          request.body?.company ||
+          "",
+        ).trim();
+
+      const website =
+        String(
+          request.body?.website ||
+          "",
+        ).trim();
+
+      const role =
+        String(
+          request.body?.role ||
+          "",
+        ).trim();
+
+      const requirements =
+        String(
+          request.body
+            ?.requirements ||
+          "",
+        ).trim();
+
+      const companyUrl =
+        String(
+          request.body
+            ?.companyUrl ||
+          "",
+        ).trim();
+
+      const solutions =
+        Array.isArray(
+          request.body?.solutions,
+        )
+          ? Array.from(
+              new Set(
+                request.body
+                  .solutions
+                  .map(
+                    (item) =>
+                      String(
+                        item ||
+                        "",
+                      ).trim(),
+                  )
+                  .filter(Boolean),
+              ),
+            ).slice(0, 12)
+          : [];
+
+      if (companyUrl) {
+        return {
+          success: true,
+        };
+      }
+
+      if (
+        name.length < 2 ||
+        name.length > 120
+      ) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "Name must be between 2 and 120 characters.",
+          });
+      }
+
+      if (!isValidEmail(email)) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "A valid work email is required.",
+          });
+      }
+
+      if (
+        company.length < 2 ||
+        company.length > 160
+      ) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "Company must be between 2 and 160 characters.",
+          });
+      }
+
+      if (
+        role.length > 120 ||
+        website.length > 240
+      ) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "Enterprise enquiry details are too long.",
+          });
+      }
+
+      if (
+        requirements.length < 10 ||
+        requirements.length > 4000
+      ) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "Requirements must be between 10 and 4000 characters.",
+          });
+      }
+
+      const resendApiKey =
+        String(
+          process.env
+            .RESEND_API_KEY ||
+          "",
+        ).trim();
+
+      const sender =
+        String(
+          process.env
+            .CONTROLPACT_ENTERPRISE_FROM_EMAIL ||
+          process.env
+            .CONTROLPACT_INVITE_FROM_EMAIL ||
+          process.env
+            .RESEND_FROM_EMAIL ||
+          "",
+        ).trim();
+
+      const salesEmail =
+        String(
+          process.env
+            .CONTROLPACT_SALES_EMAIL ||
+          "partnerships@velvetpay.app",
+        ).trim();
+
+      if (
+        !resendApiKey ||
+        !sender
+      ) {
+        return reply
+          .code(503)
+          .send({
+            success: false,
+            message:
+              "Enterprise enquiry email delivery is not configured.",
+          });
+      }
+
+      const submittedAt =
+        new Date()
+          .toISOString();
+
+      const safeSolutions =
+        solutions.length > 0
+          ? solutions
+          : [
+              "Not specified",
+            ];
+
+      const textBody = [
+        "New ControlPact Enterprise enquiry",
+        "",
+        `Name: ${name}`,
+        `Email: ${email}`,
+        `Company: ${company}`,
+        `Role: ${role || "Not supplied"}`,
+        `Website: ${website || "Not supplied"}`,
+        `Solutions: ${safeSolutions.join(", ")}`,
+        "",
+        "Requirements:",
+        requirements,
+        "",
+        `Submitted: ${submittedAt}`,
+      ].join("\n");
+
+      const resendResponse =
+        await fetch(
+          "https://api.resend.com/emails",
+          {
+            method: "POST",
+            headers: {
+              Authorization:
+                `Bearer ${resendApiKey}`,
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify({
+                from:
+                  sender,
+                to: [
+                  salesEmail,
+                ],
+                reply_to:
+                  email,
+                subject:
+                  `ControlPact Enterprise enquiry â€” ${company}`,
+                text:
+                  textBody,
+              }),
+          },
+        );
+
+      if (!resendResponse.ok) {
+        const providerMessage =
+          await resendResponse
+            .text()
+            .catch(
+              () => "",
+            );
+
+        request.log.error(
+          {
+            status:
+              resendResponse.status,
+            providerMessage,
+          },
+          "ControlPact Enterprise enquiry email delivery failed.",
+        );
+
+        return reply
+          .code(502)
+          .send({
+            success: false,
+            message:
+              "Your enquiry could not be delivered. Please try again.",
+          });
+      }
+
+      return {
+        success: true,
+        message:
+          "Enterprise enquiry received.",
+      };
+    },
+  );
   return app;
 };

@@ -71,7 +71,7 @@ const plans = [
       "Custom support and commercial terms",
     ],
     action: "Contact Sales",
-    href: "#enterprise",
+    href: "/enterprise",
     featured: false,
   },
 ];
@@ -276,12 +276,12 @@ export default function PricingPage() {
             </p>
           </div>
 
-          <a
+          <Link
             className="cp-pricing-primary cp-pricing-large"
-            href="mailto:partnerships@velvetpay.app?subject=ControlPact%20Enterprise%20Enquiry"
+            to="/enterprise"
           >
             Contact Sales
-          </a>
+          </Link>
         </section>
       </main>
 

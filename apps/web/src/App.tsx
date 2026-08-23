@@ -28,6 +28,7 @@ import DeveloperDocsPage from "./pages/DeveloperDocsPage";
 import PricingPage from "./pages/PricingPage";
 import LicensingPage from "./pages/LicensingPage";
 import BillingCheckoutPage, { CheckoutSuccessPage } from "./pages/BillingCheckoutPage";
+import EnterpriseEnquiryPage from "./pages/EnterpriseEnquiryPage";
 
 export default function App() {
   const [
@@ -278,6 +279,12 @@ export default function App() {
             <PricingPage />
           }
         />
+        <Route
+          path="/enterprise"
+          element={
+            <EnterpriseEnquiryPage />
+          }
+        />
 
         <Route
           path="/licensing"
@@ -352,6 +359,12 @@ export default function App() {
         path="/pricing"
         element={
           <PricingPage />
+        }
+      />
+      <Route
+        path="/enterprise"
+        element={
+          <EnterpriseEnquiryPage />
         }
       />
       <Route
