@@ -53,6 +53,11 @@ import {
 
 
 import {
+  CONTROLPACT_BILLING_CATALOG,
+  buildControlPactEntitlements,
+  createControlPactBillingStorage,
+} from "./billing-storage.js";
+import {
   createAccessToken,
   createApiKeySecret,
   hashAccessToken,
@@ -148,6 +153,9 @@ export const buildApp = () => {
 
   const domainStorage =
     createControlPactDomainStorage();
+
+  const billingStorage =
+    createControlPactBillingStorage();
 
   const reviewStorage =
     createReviewWorkflowStorage();
@@ -5340,5 +5348,67 @@ export const buildApp = () => {
     },
   );
 
+  app.get(
+    "/v1/billing/plans",
+    async () => ({
+      success: true,
+      plans:
+        CONTROLPACT_BILLING_CATALOG,
+    }),
+  );
+
+  app.get(
+    "/v1/billing/status",
+    async (
+      request,
+      reply,
+    ) => {
+      const user =
+        await resolveAuthenticatedUser(
+          request.headers
+            .authorization,
+        );
+
+      if (!user) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            message:
+              "Authentication is required.",
+          });
+      }
+
+      await billingStorage
+        .ensureSandboxPlatform(
+          user.organizationId,
+        );
+
+      const records =
+        await billingStorage
+          .listByOrganization(
+            user.organizationId,
+          );
+
+      return {
+        success: true,
+        organizationId:
+          user.organizationId,
+        records,
+        entitlements:
+          buildControlPactEntitlements(
+            records,
+          ),
+      };
+    },
+  );
+
+  app.addHook(
+    "onClose",
+    async () => {
+      await billingStorage
+        .close();
+    },
+  );
   return app;
 };
