@@ -1,22 +1,42 @@
 {
-  "name": "@controlpact/sdk",
-  "version": "0.1.0",
-  "description": "Official TypeScript and JavaScript SDK for ControlPact.",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "test": "node --test test/*.test.mjs"
-  }
+    "name":  "@controlpact/sdk",
+    "version":  "0.1.0",
+    "description":  "Official TypeScript and JavaScript SDK for governing AI-agent decisions with ControlPact.",
+    "type":  "module",
+    "main":  "dist/index.js",
+    "types":  "dist/index.d.ts",
+    "exports":  {
+                    ".":  {
+                              "types":  "./dist/index.d.ts",
+                              "import":  "./dist/index.js"
+                          }
+                },
+    "files":  [
+                  "dist",
+                  "README.md",
+                  "examples"
+              ],
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.json",
+                    "test":  "node --test test/*.test.mjs"
+                },
+    "license":  "UNLICENSED",
+    "sideEffects":  false,
+    "keywords":  [
+                     "ai",
+                     "agents",
+                     "governance",
+                     "policy",
+                     "approval",
+                     "audit",
+                     "controlpact"
+                 ],
+    "engines":  {
+                    "node":  "\u003e=18"
+                },
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/velvetpay/controlpact.git",
+                       "directory":  "packages/sdk"
+                   }
 }
