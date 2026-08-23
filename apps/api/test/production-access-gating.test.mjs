@@ -8,7 +8,7 @@ process.env.CONTROLPACT_REQUIRE_API_KEYS =
   "true";
 
 process.env.CONTROLPACT_RECEIPT_SECRET =
-  "controlpact-scoped-key-test-secret";
+  "controlpact-production-gating-test-secret";
 
 const {
   buildApp,
@@ -25,40 +25,42 @@ const authHeaders = (
 });
 
 test(
-  "scoped API key derives agent and organisation policy authority",
+  "sandbox organisation cannot create a production execution key",
   async () => {
     const app =
       buildApp();
 
-    const registrationResponse =
+    const registration =
       await app.inject({
         method: "POST",
-        url: "/v1/auth/register",
+        url:
+          "/v1/auth/register",
         payload: {
           email:
-            "scoped-owner@controlpact.test",
+            "sandbox-gating-owner@controlpact.test",
           password:
-            "ControlPact-Scoped-2026!",
+            "ControlPact-Gating-2026!",
           organizationName:
-            "Scoped Key Organisation",
+            "Sandbox Gating Organisation",
         },
       });
 
     assert.equal(
-      registrationResponse.statusCode,
+      registration.statusCode,
       201,
     );
 
-    const registration =
-      registrationResponse.json();
+    const session =
+      registration.json();
 
     const environmentResponse =
       await app.inject({
         method: "POST",
-        url: "/v1/environments",
+        url:
+          "/v1/environments",
         headers:
           authHeaders(
-            registration.accessToken,
+            session.accessToken,
           ),
         payload: {
           name:
@@ -66,7 +68,7 @@ test(
           category:
             "SOFTWARE_DEVOPS",
           mode:
-            "TEST",
+            "PRODUCTION",
         },
       });
 
@@ -87,7 +89,7 @@ test(
           `/v1/environments/${environment.id}`,
         headers:
           authHeaders(
-            registration.accessToken,
+            session.accessToken,
           ),
         payload: {
           status:
@@ -107,7 +109,7 @@ test(
           "/v1/organization-policies/from-template",
         headers:
           authHeaders(
-            registration.accessToken,
+            session.accessToken,
           ),
         payload: {
           templateId:
@@ -136,7 +138,7 @@ test(
           `/v1/organization-policies/${policy.id}/publish`,
         headers:
           authHeaders(
-            registration.accessToken,
+            session.accessToken,
           ),
       });
 
@@ -148,18 +150,19 @@ test(
     const agentResponse =
       await app.inject({
         method: "POST",
-        url: "/v1/agents",
+        url:
+          "/v1/agents",
         headers:
           authHeaders(
-            registration.accessToken,
+            session.accessToken,
           ),
         payload: {
           environmentId:
             environment.id,
           name:
-            "Deployment Agent",
+            "Production Deployment Agent",
           externalAgentId:
-            "deployment-agent",
+            "production-deployment-agent",
         },
       });
 
@@ -180,7 +183,7 @@ test(
           "/v1/agent-assignments",
         headers:
           authHeaders(
-            registration.accessToken,
+            session.accessToken,
           ),
         payload: {
           environmentId:
@@ -202,14 +205,15 @@ test(
     const keyResponse =
       await app.inject({
         method: "POST",
-        url: "/v1/api-keys",
+        url:
+          "/v1/api-keys",
         headers:
           authHeaders(
-            registration.accessToken,
+            session.accessToken,
           ),
         payload: {
           name:
-            "Production Deployment Key",
+            "Blocked Production Key",
           environmentId:
             environment.id,
           agentId:
@@ -224,90 +228,53 @@ test(
 
     assert.equal(
       keyResponse.statusCode,
-      201,
+      402,
     );
 
-    const keyBody =
+    const blockedKeyBody =
       keyResponse.json();
 
     assert.equal(
-      keyBody.apiKey.environmentId,
-      environment.id,
+      blockedKeyBody.code,
+      "PRODUCTION_ENTITLEMENT_REQUIRED",
     );
 
-    assert.equal(
-      keyBody.apiKey.agentId,
-      agent.id,
+    assert.match(
+      blockedKeyBody.message,
+      /entitlement is required/i,
     );
 
-    assert.equal(
-      keyBody.apiKey.policyId,
-      policy.id,
-    );
-
-    assert.deepEqual(
-      keyBody.apiKey.scopes,
-      [
-        "decisions:execute",
-      ],
-    );
-
-    const decisionResponse =
+    const billingStatus =
       await app.inject({
-        method: "POST",
-        url: "/v1/decisions",
-        headers: {
-          authorization:
-            `Bearer ${keyBody.secret}`,
-        },
-        payload: {
-          policyId:
-            "finance-policy",
-          referenceId:
-            "release-v9.1.0",
-          request: {
-            agentId:
-              "forged-agent",
-            action:
-              "deploy",
-            resource:
-              "service:payments-api",
-            context: {
-              environment:
-                "production",
-              testsPassed:
-                false,
-            },
-          },
-        },
+        method: "GET",
+        url:
+          "/v1/billing/status",
+        headers:
+          authHeaders(
+            session.accessToken,
+          ),
       });
 
     assert.equal(
-      decisionResponse.statusCode,
+      billingStatus.statusCode,
       200,
     );
 
-    const decision =
-      decisionResponse.json();
+    const billing =
+      billingStatus.json();
 
     assert.equal(
-      decision.result.policyId,
-      policy.id,
+      billing
+        .entitlements
+        .productionPlatformAccess,
+      false,
     );
 
     assert.equal(
-      decision.receipt.payload.agentId,
-      "deployment-agent",
-    );
-
-    assert.notEqual(
-      decision.receipt.payload.agentId,
-      "forged-agent",
-    );
-
-    assert.notEqual(
-      decision.result.policyId,
-      "finance-policy",
+      billing
+        .entitlements
+        .standaloneProductionSdkAccess,
+      false,
     );
 
     await app.close();

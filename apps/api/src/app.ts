@@ -176,6 +176,42 @@ export const buildApp = () => {
 
   const billingStorage =
     createControlPactBillingStorage();
+  const getOrganizationBillingEntitlements =
+    async (
+      organizationId: string,
+    ) => {
+      await billingStorage
+        .ensureSandboxPlatform(
+          organizationId,
+        );
+
+      const records =
+        await billingStorage
+          .listByOrganization(
+            organizationId,
+          );
+
+      return buildControlPactEntitlements(
+        records,
+      );
+    };
+
+  const hasOrganizationProductionAccess =
+    async (
+      organizationId: string,
+    ) => {
+      const entitlements =
+        await getOrganizationBillingEntitlements(
+          organizationId,
+        );
+
+      return (
+        entitlements
+          .productionPlatformAccess ||
+        entitlements
+          .standaloneProductionSdkAccess
+      );
+    };
 
   const reviewStorage =
     createReviewWorkflowStorage();
@@ -3588,6 +3624,25 @@ export const buildApp = () => {
             });
         }
 
+        if (
+          environment.mode ===
+            "PRODUCTION" &&
+          !(
+            await hasOrganizationProductionAccess(
+              user.organizationId,
+            )
+          )
+        ) {
+          return reply
+            .code(402)
+            .send({
+              success: false,
+              code:
+                "PRODUCTION_ENTITLEMENT_REQUIRED",
+              message:
+                "A Production Platform, Business Platform, Enterprise, or standalone Production SDK entitlement is required for a production execution key.",
+            });
+        }
         scopes =
           requestedScopes.length > 0
             ? requestedScopes
@@ -5069,6 +5124,26 @@ export const buildApp = () => {
             });
         }
 
+        if (
+          environment.mode ===
+            "PRODUCTION" &&
+          !(
+            await hasOrganizationProductionAccess(
+              authenticatedApiKey
+                .organizationId,
+            )
+          )
+        ) {
+          return reply
+            .code(402)
+            .send({
+              success: false,
+              code:
+                "PRODUCTION_ENTITLEMENT_REQUIRED",
+              message:
+                "A Production Platform, Business Platform, Enterprise, or standalone Production SDK entitlement is required for production decision execution.",
+            });
+        }
         actionRequest = {
           ...(callerRequest || {}),
           agentId:
