@@ -8,6 +8,7 @@ import Fastify, {
 } from "fastify";
 
 import Stripe from "stripe";
+import rawBody from "fastify-raw-body";
 
 import {
   evaluatePolicy,
@@ -58,6 +59,7 @@ import {
   CONTROLPACT_BILLING_CATALOG,
   buildControlPactEntitlements,
   createControlPactBillingStorage,
+  mapStripeSubscriptionStatus,
 } from "./billing-storage.js";
 import {
   createAccessToken,
@@ -150,6 +152,19 @@ export const buildApp = () => {
     pluginTimeout: 30000,
   });
 
+  app.register(
+    rawBody,
+    {
+      field:
+        "rawBody",
+      global:
+        false,
+      encoding:
+        "utf8",
+      runFirst:
+        true,
+    },
+  );
   const policyRegistry =
     new PolicyRegistry();
 
@@ -5548,6 +5563,328 @@ export const buildApp = () => {
           session.id,
         url:
           session.url,
+      };
+    },
+  );
+  app.post(
+    "/v1/billing/stripe/webhook",
+    {
+      config: {
+        rawBody:
+          true,
+      },
+    },
+    async (
+      request,
+      reply,
+    ) => {
+      const stripeSecretKey =
+        String(
+          process.env
+            .STRIPE_SECRET_KEY ||
+            "",
+        ).trim();
+
+      const webhookSecret =
+        String(
+          process.env
+            .STRIPE_WEBHOOK_SECRET ||
+            "",
+        ).trim();
+
+      if (
+        !stripeSecretKey ||
+        !webhookSecret
+      ) {
+        return reply
+          .code(503)
+          .send({
+            success: false,
+            message:
+              "Stripe webhook processing is not configured.",
+          });
+      }
+
+      const rawSignature =
+        request.headers[
+          "stripe-signature"
+        ];
+
+      const signature =
+        Array.isArray(
+          rawSignature,
+        )
+          ? rawSignature[0]
+          : rawSignature;
+
+      if (!signature) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "Stripe-Signature is required.",
+          });
+      }
+
+      const rawBodyValue =
+        (
+          request as typeof request & {
+            rawBody?: string | Buffer;
+          }
+        ).rawBody;
+
+      if (!rawBodyValue) {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "Stripe webhook raw body is unavailable.",
+          });
+      }
+
+      const stripe =
+        new Stripe(
+          stripeSecretKey,
+        );
+
+      let event:
+        Stripe.Event;
+
+      try {
+        event =
+          stripe.webhooks
+            .constructEvent(
+              rawBodyValue,
+              signature,
+              webhookSecret,
+            );
+      } catch {
+        return reply
+          .code(400)
+          .send({
+            success: false,
+            message:
+              "Stripe webhook signature verification failed.",
+          });
+      }
+
+      const saveStripeEntitlement =
+        async ({
+          organizationId,
+          planId,
+          status,
+          stripeCustomerId,
+          stripeSubscriptionId,
+          stripeCheckoutSessionId,
+        }: {
+          organizationId?: string;
+          planId?: string;
+          status:
+            | "ACTIVE"
+            | "PAST_DUE"
+            | "CANCELLED"
+            | "EXPIRED";
+          stripeCustomerId?: string;
+          stripeSubscriptionId?: string;
+          stripeCheckoutSessionId?: string;
+        }) => {
+          if (
+            !organizationId ||
+            !planId
+          ) {
+            return;
+          }
+
+          const plan =
+            CONTROLPACT_BILLING_CATALOG
+              .find(
+                (item) =>
+                  item.id ===
+                    planId,
+              );
+
+          if (
+            !plan ||
+            plan.id ===
+              "sandbox" ||
+            plan.id ===
+              "enterprise" ||
+            plan.amountMinor ===
+              null
+          ) {
+            return;
+          }
+
+          const existing =
+            await billingStorage
+              .getByProduct(
+                organizationId,
+                plan.product,
+              );
+
+          const now =
+            new Date()
+              .toISOString();
+
+          await billingStorage
+            .save({
+              id:
+                existing?.id ||
+                (
+                  plan.product ===
+                    "SDK"
+                    ? `billing_sdk_${organizationId}`
+                    : `billing_platform_${organizationId}`
+                ),
+              organizationId,
+              product:
+                plan.product,
+              plan:
+                plan.plan,
+              status,
+              interval:
+                plan.interval,
+              currency:
+                plan.currency,
+              amountMinor:
+                plan.amountMinor,
+              source:
+                "STRIPE",
+              stripeCustomerId:
+                stripeCustomerId ||
+                existing
+                  ?.stripeCustomerId,
+              stripeSubscriptionId:
+                stripeSubscriptionId ||
+                existing
+                  ?.stripeSubscriptionId,
+              stripeCheckoutSessionId:
+                stripeCheckoutSessionId ||
+                existing
+                  ?.stripeCheckoutSessionId,
+              metadata: {
+                ...(existing
+                  ?.metadata ||
+                  {}),
+                planId:
+                  plan.id,
+              },
+              createdAt:
+                existing
+                  ?.createdAt ||
+                now,
+              updatedAt:
+                now,
+              cancelledAt:
+                status ===
+                  "CANCELLED"
+                  ? now
+                  : undefined,
+            });
+        };
+
+      if (
+        event.type ===
+          "checkout.session.completed" ||
+        event.type ===
+          "checkout.session.async_payment_succeeded"
+      ) {
+        const session =
+          event.data.object as
+            Stripe.Checkout.Session;
+
+        const organizationId =
+          session.metadata
+            ?.organizationId ||
+          session
+            .client_reference_id ||
+          undefined;
+
+        const planId =
+          session.metadata
+            ?.planId;
+
+        const customerId =
+          typeof session.customer ===
+            "string"
+            ? session.customer
+            : session.customer
+                ?.id;
+
+        const subscriptionId =
+          typeof session.subscription ===
+            "string"
+            ? session.subscription
+            : session.subscription
+                ?.id;
+
+        await saveStripeEntitlement({
+          organizationId,
+          planId,
+          status:
+            session.payment_status ===
+              "paid" ||
+            session.payment_status ===
+              "no_payment_required"
+              ? "ACTIVE"
+              : "PAST_DUE",
+          stripeCustomerId:
+            customerId,
+          stripeSubscriptionId:
+            subscriptionId,
+          stripeCheckoutSessionId:
+            session.id,
+        });
+      }
+
+      if (
+        event.type ===
+          "customer.subscription.created" ||
+        event.type ===
+          "customer.subscription.updated" ||
+        event.type ===
+          "customer.subscription.deleted"
+      ) {
+        const subscription =
+          event.data.object as
+            Stripe.Subscription;
+
+        const organizationId =
+          subscription.metadata
+            ?.organizationId;
+
+        const planId =
+          subscription.metadata
+            ?.planId;
+
+        const customerId =
+          typeof subscription.customer ===
+            "string"
+            ? subscription.customer
+            : subscription.customer
+                ?.id;
+
+        await saveStripeEntitlement({
+          organizationId,
+          planId,
+          status:
+            event.type ===
+              "customer.subscription.deleted"
+              ? "CANCELLED"
+              : mapStripeSubscriptionStatus(
+                  subscription.status,
+                ),
+          stripeCustomerId:
+            customerId,
+          stripeSubscriptionId:
+            subscription.id,
+        });
+      }
+
+      return {
+        received: true,
       };
     },
   );

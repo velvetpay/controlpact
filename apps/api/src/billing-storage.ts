@@ -22,6 +22,32 @@ export type BillingStatus =
   | "CANCELLED"
   | "EXPIRED";
 
+export const mapStripeSubscriptionStatus =
+  (
+    status: string,
+  ): Exclude<
+    BillingStatus,
+    "SANDBOX"
+  > => {
+    switch (status) {
+      case "active":
+      case "trialing":
+        return "ACTIVE";
+
+      case "canceled":
+        return "CANCELLED";
+
+      case "incomplete_expired":
+        return "EXPIRED";
+
+      case "past_due":
+      case "unpaid":
+      case "incomplete":
+      case "paused":
+      default:
+        return "PAST_DUE";
+    }
+  };
 export type BillingInterval =
   | "FREE"
   | "MONTHLY"

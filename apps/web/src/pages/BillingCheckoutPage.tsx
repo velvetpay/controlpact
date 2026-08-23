@@ -265,8 +265,9 @@ export function CheckoutSuccessPage() {
 
           <p>
             Payment confirmation and entitlement activation are
-            completed by the verified Stripe webhook. That activation
-            layer is added in the next billing phase.
+            completed by ControlPact only after the signed Stripe
+            webhook has been verified. Your organisation can return to
+            the platform while that confirmation completes.
           </p>
 
           <Link
