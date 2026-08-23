@@ -51,6 +51,7 @@ export default function PublicHomePage() {
           <a href="#flow">Control flow</a>
           <a href="#authority">Authority</a>
           <a href="#sdk">SDK</a>
+          <Link to="/docs">Documentation</Link>
         </nav>
 
         <div className="cp-public-actions">
@@ -270,9 +271,16 @@ export default function PublicHomePage() {
               <li>Production API access</li>
             </ul>
             <div className="cp-public-sdk-note">
-              SDK packaging, documentation and commercial licensing
-              are the next product stage.
+              SDK packaging and developer documentation are available.
+              Commercial licensing and checkout are the next product stage.
             </div>
+
+            <Link
+              className="cp-public-button cp-public-button-outline"
+              to="/docs"
+            >
+              Read developer docs
+            </Link>
           </div>
         </section>
 

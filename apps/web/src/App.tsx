@@ -24,6 +24,7 @@ import ApprovalsPage from "./pages/ApprovalsPage";
 import AuditPage from "./pages/AuditPage";
 import SettingsPage from "./pages/SettingsPage";
 import PublicHomePage from "./pages/PublicHomePage";
+import DeveloperDocsPage from "./pages/DeveloperDocsPage";
 
 export default function App() {
   const [
@@ -218,6 +219,57 @@ export default function App() {
         />
 
         <Route
+          path="/docs"
+          element={
+            <DeveloperDocsPage />
+          }
+        />
+
+        <Route
+          path="/docs/quick-start"
+          element={
+            <DeveloperDocsPage
+              section="quick-start"
+            />
+          }
+        />
+
+        <Route
+          path="/docs/decisions"
+          element={
+            <DeveloperDocsPage
+              section="decisions"
+            />
+          }
+        />
+
+        <Route
+          path="/docs/approvals"
+          element={
+            <DeveloperDocsPage
+              section="approvals"
+            />
+          }
+        />
+
+        <Route
+          path="/docs/idempotency"
+          element={
+            <DeveloperDocsPage
+              section="idempotency"
+            />
+          }
+        />
+
+        <Route
+          path="/docs/security"
+          element={
+            <DeveloperDocsPage
+              section="security"
+            />
+          }
+        />
+        <Route
           path="/login"
           element={
             <AccountAccess
@@ -270,6 +322,58 @@ export default function App() {
 
   return (
     <Routes>
+      <Route
+        path="/docs"
+        element={
+          <DeveloperDocsPage />
+        }
+      />
+
+      <Route
+        path="/docs/quick-start"
+        element={
+          <DeveloperDocsPage
+            section="quick-start"
+          />
+        }
+      />
+
+      <Route
+        path="/docs/decisions"
+        element={
+          <DeveloperDocsPage
+            section="decisions"
+          />
+        }
+      />
+
+      <Route
+        path="/docs/approvals"
+        element={
+          <DeveloperDocsPage
+            section="approvals"
+          />
+        }
+      />
+
+      <Route
+        path="/docs/idempotency"
+        element={
+          <DeveloperDocsPage
+            section="idempotency"
+          />
+        }
+      />
+
+      <Route
+        path="/docs/security"
+        element={
+          <DeveloperDocsPage
+            section="security"
+          />
+        }
+      />
+
       <Route
         element={
           <ControlPactLayout
