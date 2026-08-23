@@ -19,7 +19,7 @@ process.env
 test(
   "health endpoint works",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const response =
       await app.inject({
@@ -39,7 +39,7 @@ test(
 test(
   "lists server-owned policies",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const response =
       await app.inject({
@@ -67,7 +67,7 @@ test(
 test(
   "finance policy returns ALLOW",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const response =
       await app.inject({
@@ -110,7 +110,7 @@ test(
 test(
   "finance policy returns APPROVE for large refund",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const response =
       await app.inject({
@@ -145,7 +145,7 @@ test(
 test(
   "production policy blocks account deletion",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const response =
       await app.inject({
@@ -178,7 +178,7 @@ test(
 test(
   "unknown policy is rejected",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const response =
       await app.inject({
@@ -208,7 +208,7 @@ test(
 test(
   "caller cannot override server policy",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const response =
       await app.inject({

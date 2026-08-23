@@ -21,7 +21,7 @@ test(
   "persists and verifies signed audit receipt",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registrationResponse =
       await app.inject({

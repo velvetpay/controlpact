@@ -12,7 +12,7 @@ process.env
 test(
   "stores caller reference and target",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     await app.inject({
       method: "POST",
@@ -70,7 +70,7 @@ test(
 test(
   "generates reference when caller omits one",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     await app.inject({
       method: "POST",
@@ -113,7 +113,7 @@ test(
 test(
   "approval queue carries action context",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     await app.inject({
       method: "POST",

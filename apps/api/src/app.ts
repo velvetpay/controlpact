@@ -147,13 +147,13 @@ type DecisionRecord = {
   approvalReason?: string;
 };
 
-export const buildApp = () => {
+export const buildApp = async () => {
   const app = Fastify({
     logger: false,
     pluginTimeout: 30000,
   });
 
-  app.register(
+  await app.register(
     rawBody,
     {
       field:
@@ -6460,6 +6460,114 @@ export const buildApp = () => {
       };
     },
   );
+  app.get(
+    "/v1/billing/sdk/download",
+    async (
+      request,
+      reply,
+    ) => {
+      const user =
+        await resolveAuthenticatedUser(
+          request.headers
+            .authorization,
+        );
+
+      if (!user) {
+        return reply
+          .code(401)
+          .send({
+            success: false,
+            code:
+              "AUTHENTICATION_REQUIRED",
+            message:
+              "Authentication is required.",
+          });
+      }
+
+      await billingStorage
+        .ensureSandboxPlatform(
+          user.organizationId,
+        );
+
+      const records =
+        await billingStorage
+          .listByOrganization(
+            user.organizationId,
+          );
+
+      const entitlements =
+        buildControlPactEntitlements(
+          records,
+        );
+
+      const canDownloadSdk =
+        entitlements
+          .subscribedAccountSdkAccess ||
+        entitlements
+          .standaloneProductionSdkAccess;
+
+      if (!canDownloadSdk) {
+        return reply
+          .code(402)
+          .send({
+            success: false,
+            code:
+              "SDK_ENTITLEMENT_REQUIRED",
+            upgradeUrl:
+              "/pricing#sdk",
+            message:
+              "An active Production, Business, Enterprise or standalone Production SDK entitlement is required to download the ControlPact SDK.",
+          });
+      }
+
+      try {
+        const {
+          readFile,
+        } =
+          await import(
+            "node:fs/promises"
+          );
+
+        const archive =
+          await readFile(
+            new URL(
+              "./sdk-download/controlpact-sdk-0.1.0.tgz",
+              import.meta.url,
+            ),
+          );
+
+        reply.header(
+          "Content-Type",
+          "application/gzip",
+        );
+
+        reply.header(
+          "Content-Disposition",
+          'attachment; filename="controlpact-sdk-0.1.0.tgz"',
+        );
+
+        reply.header(
+          "Cache-Control",
+          "private, no-store",
+        );
+
+        return reply.send(
+          archive,
+        );
+      } catch {
+        return reply
+          .code(503)
+          .send({
+            success: false,
+            code:
+              "SDK_PACKAGE_UNAVAILABLE",
+            message:
+              "The ControlPact SDK package is temporarily unavailable.",
+          });
+      }
+    },
+  );
+
   app.get(
     "/v1/billing/plans",
     async () => ({

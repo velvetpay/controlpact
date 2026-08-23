@@ -28,7 +28,7 @@ test(
   "scoped API key derives agent and organisation policy authority",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registrationResponse =
       await app.inject({

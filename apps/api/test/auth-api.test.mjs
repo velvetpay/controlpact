@@ -26,7 +26,7 @@ test(
   "registers owner and authenticates me",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const response =
       await app.inject({
@@ -109,7 +109,7 @@ test(
   "rejects duplicate registration",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const first =
       await app.inject({
@@ -151,7 +151,7 @@ test(
   "login works and wrong password fails",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registration =
       await app.inject({
@@ -228,7 +228,7 @@ test(
   "logout revokes access token",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registration =
       await app.inject({

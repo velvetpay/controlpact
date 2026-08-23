@@ -31,7 +31,7 @@ test(
   "human approval is authenticated and reviewer identity is server-derived",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const ownerResponse =
       await app.inject({

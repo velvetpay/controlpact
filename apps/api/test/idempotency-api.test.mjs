@@ -28,7 +28,7 @@ test(
   "replays the same decision for the same Idempotency-Key and exposes decision status",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const register =
       await app.inject({

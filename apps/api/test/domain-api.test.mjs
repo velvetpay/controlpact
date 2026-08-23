@@ -25,7 +25,7 @@ test(
   "organisation builds environment, policy, agent, team and assignment",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registerResponse =
       await app.inject({

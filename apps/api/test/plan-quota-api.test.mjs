@@ -28,7 +28,7 @@ test(
   "sandbox environment, agent and API-key quotas are enforced by the API",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registration =
       await app.inject({

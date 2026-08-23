@@ -12,7 +12,7 @@ process.env
 test(
   "decision history starts empty",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const response =
       await app.inject({
@@ -37,7 +37,7 @@ test(
 test(
   "records a real policy decision",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     await app.inject({
       method: "POST",
@@ -109,7 +109,7 @@ test(
 test(
   "newest decisions appear first",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     await app.inject({
       method: "POST",

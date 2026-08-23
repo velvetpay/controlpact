@@ -88,7 +88,7 @@ test(
   "owner creates and lists API key without exposing stored secret",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registration =
       await registerOwner(
@@ -161,7 +161,7 @@ test(
   "decision execution requires an API key when enforcement is enabled",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const response =
       await app.inject({
@@ -201,7 +201,7 @@ test(
   "valid organisation API key executes a decision",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registration =
       await registerOwner(
@@ -266,7 +266,7 @@ test(
   "revoked API key can no longer execute decisions",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registration =
       await registerOwner(

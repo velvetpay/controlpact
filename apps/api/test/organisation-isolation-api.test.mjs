@@ -130,7 +130,7 @@ test(
   "decision and approval management reads are isolated by organisation",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const orgA =
       await createOwnerAndKey(

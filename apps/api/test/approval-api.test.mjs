@@ -38,7 +38,7 @@ const createApproval =
 test(
   "APPROVE decision creates pending approval",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const body =
       await createApproval(
@@ -62,7 +62,7 @@ test(
 test(
   "lists pending approvals",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     await createApproval(app);
 
@@ -93,7 +93,7 @@ test(
 test(
   "human can approve pending action",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const created =
       await createApproval(
@@ -128,7 +128,7 @@ test(
 test(
   "human can reject pending action",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const created =
       await createApproval(

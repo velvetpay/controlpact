@@ -31,7 +31,7 @@ test(
   "invited Approver activates a real same-organisation account exactly once",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const ownerResponse =
       await app.inject({

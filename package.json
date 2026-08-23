@@ -1,28 +1,29 @@
 {
-    "name":  "controlpact",
-    "version":  "0.1.0",
-    "private":  true,
-    "workspaces":  [
-                       "apps/*",
-                       "packages/*"
-                   ],
-    "scripts":  {
-                    "dev:web":  "npm run dev --workspace=apps/web",
-                    "build:web":  "npm run build --workspace=apps/web",
-                    "build:policy":  "npm run build --workspace=@controlpact/policy-engine",
-                    "test:policy":  "npm run build:policy \u0026\u0026 npm run test --workspace=@controlpact/policy-engine",
-                    "test:api":  "npm run build:api \u0026\u0026 npm run test --workspace=@controlpact/api",
-                    "build:receipts":  "npm run build --workspace=@controlpact/receipts",
-                    "test:receipts":  "npm run build:receipts \u0026\u0026 npm run test --workspace=@controlpact/receipts",
-                    "build:approvals":  "npm run build --workspace=@controlpact/approvals",
-                    "test:approvals":  "npm run build:approvals \u0026\u0026 npm run test --workspace=@controlpact/approvals",
-                    "build:registry":  "npm run build --workspace=@controlpact/policy-registry",
-                    "test:registry":  "npm run build:policy \u0026\u0026 npm run build:registry \u0026\u0026 npm run test --workspace=@controlpact/policy-registry",
-                    "build:api":  "npm run build:policy \u0026\u0026 npm run build:receipts \u0026\u0026 npm run build:registry \u0026\u0026 npm run build:approvals \u0026\u0026 npm run build --workspace=@controlpact/api",
-                    "build:sdk":  "npm run build --workspace=@controlpact/sdk",
-                    "test:sdk":  "npm run build:sdk \u0026\u0026 npm run test --workspace=@controlpact/sdk"
-                },
-    "devDependencies":  {
-                            "typescript":  "^7.0.2"
-                        }
+  "name": "controlpact",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:policy": "npm run build --workspace=@controlpact/policy-engine",
+    "test:policy": "npm run build:policy && npm run test --workspace=@controlpact/policy-engine",
+    "test:api": "npm run build:api && npm run test --workspace=@controlpact/api",
+    "build:receipts": "npm run build --workspace=@controlpact/receipts",
+    "test:receipts": "npm run build:receipts && npm run test --workspace=@controlpact/receipts",
+    "build:approvals": "npm run build --workspace=@controlpact/approvals",
+    "test:approvals": "npm run build:approvals && npm run test --workspace=@controlpact/approvals",
+    "build:registry": "npm run build --workspace=@controlpact/policy-registry",
+    "test:registry": "npm run build:policy && npm run build:registry && npm run test --workspace=@controlpact/policy-registry",
+    "build:api": "npm run build:policy && npm run build:receipts && npm run build:registry && npm run build:approvals && npm run build --workspace=@controlpact/api && npm run build:sdk && npm run package:sdk-download",
+    "build:sdk": "npm run build --workspace=@controlpact/sdk",
+    "test:sdk": "npm run build:sdk && npm run test --workspace=@controlpact/sdk",
+    "package:sdk-download": "node scripts/package-controlpact-sdk.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
 }

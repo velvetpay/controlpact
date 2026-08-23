@@ -35,7 +35,7 @@ const createApproval =
 test(
   "approved request updates decision lifecycle",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const created =
       await createApproval(app);
@@ -90,7 +90,7 @@ test(
 test(
   "rejected request updates decision lifecycle",
   async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const created =
       await createApproval(app);

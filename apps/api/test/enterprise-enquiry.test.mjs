@@ -21,7 +21,7 @@ test(
   "enterprise enquiry validates email before attempting delivery",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const response =
       await app.inject({
@@ -63,7 +63,7 @@ test(
   "enterprise enquiry reports missing Resend configuration without external delivery",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const response =
       await app.inject({

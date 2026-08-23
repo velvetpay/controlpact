@@ -28,7 +28,7 @@ test(
   "sandbox organisation is blocked at the first production environment attempt",
   async () => {
     const app =
-      buildApp();
+      await buildApp();
 
     const registration =
       await app.inject({

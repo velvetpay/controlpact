@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -260,6 +261,200 @@ export default function BillingCheckoutPage({
 }
 
 export function CheckoutSuccessPage() {
+  const accessToken =
+    sessionStorage.getItem(
+      "controlpactOwnerToken",
+    ) || "";
+
+  const [
+    sdkState,
+    setSdkState,
+  ] =
+    useState<
+      | "checking"
+      | "ready"
+      | "pending"
+      | "error"
+    >("checking");
+
+  const [
+    downloadBusy,
+    setDownloadBusy,
+  ] =
+    useState(false);
+
+  const [
+    downloadError,
+    setDownloadError,
+  ] =
+    useState("");
+
+  useEffect(() => {
+    if (!accessToken) {
+      setSdkState(
+        "error",
+      );
+      return;
+    }
+
+    let cancelled = false;
+    let timer = 0;
+    let attempt = 0;
+
+    const checkEntitlement =
+      async () => {
+        attempt += 1;
+
+        try {
+          const response =
+            await fetch(
+              "/controlpact-api/v1/billing/status",
+              {
+                headers: {
+                  Authorization:
+                    `Bearer ${accessToken}`,
+                  Accept:
+                    "application/json",
+                },
+              },
+            );
+
+          const data =
+            await response
+              .json();
+
+          const entitled =
+            Boolean(
+              data?.entitlements
+                ?.subscribedAccountSdkAccess ||
+              data?.entitlements
+                ?.standaloneProductionSdkAccess,
+            );
+
+          if (
+            response.ok &&
+            data?.success &&
+            entitled
+          ) {
+            if (!cancelled) {
+              setSdkState(
+                "ready",
+              );
+            }
+            return;
+          }
+
+          if (
+            attempt < 10 &&
+            !cancelled
+          ) {
+            timer =
+              window.setTimeout(
+                checkEntitlement,
+                1500,
+              );
+            return;
+          }
+
+          if (!cancelled) {
+            setSdkState(
+              "pending",
+            );
+          }
+        } catch {
+          if (!cancelled) {
+            setSdkState(
+              "error",
+            );
+          }
+        }
+      };
+
+    checkEntitlement();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(
+        timer,
+      );
+    };
+  }, [accessToken]);
+
+  const downloadSdk =
+    async () => {
+      setDownloadBusy(true);
+      setDownloadError("");
+
+      try {
+        const response =
+          await fetch(
+            "/controlpact-api/v1/billing/sdk/download",
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+        if (!response.ok) {
+          const data =
+            await response
+              .json()
+              .catch(
+                () => null,
+              );
+
+          throw new Error(
+            data?.message ||
+            "Unable to download the ControlPact SDK.",
+          );
+        }
+
+        const archive =
+          await response.blob();
+
+        const objectUrl =
+          window.URL
+            .createObjectURL(
+              archive,
+            );
+
+        const link =
+          document
+            .createElement(
+              "a",
+            );
+
+        link.href =
+          objectUrl;
+
+        link.download =
+          "controlpact-sdk-0.1.0.tgz";
+
+        document.body
+          .appendChild(
+            link,
+          );
+
+        link.click();
+        link.remove();
+
+        window.URL
+          .revokeObjectURL(
+            objectUrl,
+          );
+      } catch (error) {
+        setDownloadError(
+          error instanceof Error
+            ? error.message
+            : "Unable to download the ControlPact SDK.",
+        );
+      } finally {
+        setDownloadBusy(false);
+      }
+    };
+
   return (
     <div className="cp-checkout">
       <main className="cp-checkout-shell">
@@ -272,19 +467,66 @@ export function CheckoutSuccessPage() {
             Stripe has returned you to ControlPact.
           </h1>
 
-          <p>
-            Payment confirmation and entitlement activation are
-            completed by ControlPact only after the signed Stripe
-            webhook has been verified. Your organisation can return to
-            the platform while that confirmation completes.
-          </p>
+          {sdkState === "checking" && (
+            <div className="cp-checkout-entitlement">
+              Verifying your signed Stripe payment and SDK entitlement...
+            </div>
+          )}
 
-          <Link
-            className="cp-checkout-primary"
-            to="/overview"
-          >
-            Return to ControlPact
-          </Link>
+          {sdkState === "ready" && (
+            <div className="cp-checkout-entitlement cp-checkout-entitlement-ready">
+              <strong>
+                SDK access is active.
+              </strong>
+              <span>
+                Your verified ControlPact entitlement can now download the commercial SDK package.
+              </span>
+            </div>
+          )}
+
+          {sdkState === "pending" && (
+            <div className="cp-checkout-entitlement">
+              Stripe confirmation is still processing. Your SDK download becomes available only after the signed webhook activates your entitlement.
+            </div>
+          )}
+
+          {sdkState === "error" && (
+            <div className="cp-checkout-entitlement">
+              We could not verify SDK access on this return page. Sign in to the same ControlPact organisation and check your billing status.
+            </div>
+          )}
+
+          {downloadError && (
+            <div className="cp-checkout-error">
+              {downloadError}
+            </div>
+          )}
+
+          <div className="cp-checkout-success-actions">
+            {sdkState === "ready" && (
+              <button
+                type="button"
+                className="cp-checkout-primary"
+                disabled={
+                  downloadBusy
+                }
+                onClick={
+                  downloadSdk
+                }
+              >
+                {downloadBusy
+                  ? "Preparing SDK..."
+                  : "Download ControlPact SDK"}
+              </button>
+            )}
+
+            <Link
+              className="cp-checkout-secondary"
+              to="/overview"
+            >
+              Return to ControlPact
+            </Link>
+          </div>
         </section>
       </main>
     </div>
