@@ -133,7 +133,7 @@ export default function PricingPage() {
         </Link>
 
         <nav>
-          <Link to="/">Product</Link>
+          <Link to="/">ControlPact Home</Link>
           <Link to="/docs">Documentation</Link>
           <Link to="/licensing">Licensing</Link>
         </nav>

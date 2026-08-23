@@ -376,7 +376,7 @@ export default function DeveloperDocsPage({
         </Link>
 
         <div className="cp-docs-top-actions">
-          <Link to="/">Product</Link>
+          <Link to="/">ControlPact Home</Link>
           <Link to="/login">Sign in</Link>
           <Link
             className="cp-docs-primary-link"

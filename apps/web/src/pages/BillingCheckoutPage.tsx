@@ -185,9 +185,15 @@ export default function BillingCheckoutPage({
           ControlPact
         </Link>
 
-        <Link to="/pricing">
-          Back to pricing
-        </Link>
+        <div className="cp-checkout-nav-actions">
+          <Link to="/">
+            ControlPact Home
+          </Link>
+
+          <Link to="/pricing">
+            Back to pricing
+          </Link>
+        </div>
       </header>
 
       <main className="cp-checkout-shell">

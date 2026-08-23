@@ -140,6 +140,9 @@ export default function EnterpriseEnquiryPage() {
         </Link>
 
         <nav>
+          <Link to="/">
+            ControlPact Home
+          </Link>
           <Link to="/pricing">
             Pricing
           </Link>

@@ -16,7 +16,7 @@ export default function LicensingPage() {
         </Link>
 
         <nav>
-          <Link to="/">Product</Link>
+          <Link to="/">ControlPact Home</Link>
           <Link to="/pricing">Pricing</Link>
           <Link to="/docs">Documentation</Link>
         </nav>
