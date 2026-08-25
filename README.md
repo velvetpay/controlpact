@@ -1,4 +1,4 @@
-﻿# ControlPact
+# ControlPact
 
 ## The authority layer for AI and automated systems
 
