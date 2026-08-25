@@ -50,7 +50,7 @@ The platform is designed to provide:
 
 🌐 **Live ControlPact platform**
 
-https://controlpact.onrender.com/
+https://ctrlpact.com/
 
 ControlPact is part of the Velvet Technologies ecosystem.
 
@@ -126,7 +126,7 @@ ControlPact sits alongside other Velvet Technologies products and infrastructure
 
 ## Links
 
-* **ControlPact:** https://controlpact.onrender.com/
+* **ControlPact:** https://ctrlpact.com/
 * **Velvet Technologies:** https://technologies.velvetpay.app/
 * **GitHub Organisation:** https://github.com/velvetpay
 
