@@ -2348,3 +2348,193 @@ h3 {
 }
 
 /* CONTROLPACT_SIDEBAR_SETTINGS_VISIBILITY_V1_END */
+
+/* =========================================================
+   ControlPact — Mobile Responsive Polish
+   ========================================================= */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+
+  /* Prevent desktop-sized containers */
+  .container,
+  .content,
+  .page-container,
+  .main-container,
+  .dashboard-container,
+  .section-container {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Stack common desktop layouts */
+  .grid,
+  .grid-2,
+  .grid-3,
+  .grid-4,
+  .cards,
+  .card-grid,
+  .features,
+  .pricing-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .row,
+  .flex-row {
+    flex-direction: column !important;
+  }
+
+  /* Navigation */
+  nav,
+  header {
+    max-width: 100%;
+  }
+
+  nav ul {
+    flex-wrap: wrap;
+  }
+
+  /* Typography */
+  h1 {
+    font-size: clamp(2rem, 9vw, 3rem);
+    line-height: 1.1;
+  }
+
+  h2 {
+    font-size: clamp(1.6rem, 7vw, 2.2rem);
+    line-height: 1.15;
+  }
+
+  h3 {
+    font-size: 1.35rem;
+  }
+
+  p {
+    line-height: 1.6;
+  }
+
+  /* Buttons */
+  .btn,
+  button,
+  .button,
+  a.button,
+  a.btn {
+    min-height: 44px;
+  }
+
+  /* Forms */
+  input,
+  select,
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 16px;
+  }
+
+  /* Cards */
+  .card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Tables */
+  table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  /* Prevent long URLs/text breaking layout */
+  * {
+    overflow-wrap: anywhere;
+  }
+
+  /* Hero sections */
+  .hero,
+  .hero-section {
+    width: 100%;
+    min-height: auto;
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+
+  /* Images */
+  .hero img,
+  .hero-section img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  /* Footer */
+  footer {
+    width: 100%;
+  }
+
+  footer .footer-grid,
+  footer .columns {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .container,
+  .content,
+  .page-container,
+  .main-container,
+  .dashboard-container,
+  .section-container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.55rem;
+  }
+
+  .hero,
+  .hero-section {
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
+
+  button,
+  .btn,
+  .button {
+    width: 100%;
+  }
+}
+
