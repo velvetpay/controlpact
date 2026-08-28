@@ -88,7 +88,7 @@ export default function PublicHomePage() {
 
             <p className="cp-public-hero-lead">
               ControlPact gives organisations a clear chain of
-              authority for AI agents — from policy and assignment
+              authority for AI agents â€” from policy and assignment
               to human approval, execution evidence and audit.
             </p>
 
