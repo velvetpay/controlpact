@@ -88,7 +88,7 @@ export default function PublicHomePage() {
 
             <p className="cp-public-hero-lead">
               ControlPact gives organisations a clear chain of
-              authority for AI agents â€” from policy and assignment
+              authority for AI agents — from policy and assignment
               to human approval, execution evidence and audit.
             </p>
 
@@ -272,8 +272,7 @@ export default function PublicHomePage() {
               <li>Production API access</li>
             </ul>
             <div className="cp-public-sdk-note">
-              SDK packaging and developer documentation are available.
-              Commercial licensing and checkout are the next product stage.
+              Commercial SDK access for teams building governed AI products.
             </div>
 
             <div className="cp-public-actions">
@@ -333,3 +332,4 @@ export default function PublicHomePage() {
     </div>
   );
 }
+
