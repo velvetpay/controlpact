@@ -29,6 +29,8 @@ import PricingPage from "./pages/PricingPage";
 import LicensingPage from "./pages/LicensingPage";
 import BillingCheckoutPage, { CheckoutSuccessPage } from "./pages/BillingCheckoutPage";
 import EnterpriseEnquiryPage from "./pages/EnterpriseEnquiryPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
 
 export default function App() {
   const [
@@ -443,6 +445,16 @@ export default function App() {
             section="security"
           />
         }
+      />
+
+      <Route
+        path="/privacy"
+        element={<PrivacyPage />}
+      />
+
+      <Route
+        path="/terms"
+        element={<TermsPage />}
       />
 
       <Route
