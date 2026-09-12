@@ -327,6 +327,10 @@ export default function PublicHomePage() {
         </div>
         <div>
           A Velvet Technologies product.
+          {" · "}
+          <Link to="/privacy">Privacy Policy</Link>
+          {" · "}
+          <Link to="/terms">Terms of Service</Link>
         </div>
       </footer>
     </div>
