@@ -329,6 +329,16 @@ export default function App() {
         />
 
         <Route
+          path="/privacy"
+          element={<PrivacyPage />}
+        />
+
+        <Route
+          path="/terms"
+          element={<TermsPage />}
+        />
+
+        <Route
           path="*"
           element={
             <Navigate
