@@ -51,6 +51,7 @@ export default function PublicHomePage() {
           <a href="#flow">Control flow</a>
           <a href="#authority">Authority</a>
           <a href="#sdk">SDK</a>
+          <Link to="/wordpress">WordPress</Link>
           <Link to="/docs">Documentation</Link>
           <Link to="/pricing">Pricing</Link>
         </nav>
@@ -281,6 +282,13 @@ export default function PublicHomePage() {
                 to="/docs"
               >
                 Read developer docs
+              </Link>
+
+              <Link
+                className="cp-public-button cp-public-button-outline cp-public-sdk-cta"
+                to="/wordpress"
+              >
+                WordPress plugin
               </Link>
 
               <Link
