@@ -1,4 +1,4 @@
-import {
+﻿import {
   useEffect,
   useState,
 } from "react";
@@ -31,6 +31,7 @@ import BillingCheckoutPage, { CheckoutSuccessPage } from "./pages/BillingCheckou
 import EnterpriseEnquiryPage from "./pages/EnterpriseEnquiryPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
+import WordPressPluginPage from "./pages/WordPressPluginPage";
 
 export default function App() {
   const [
@@ -223,6 +224,11 @@ export default function App() {
             <PublicHomePage />
           }
         />
+
+      <Route
+        path="/wordpress"
+        element={<WordPressPluginPage />}
+      />
 
         <Route
           path="/docs"
